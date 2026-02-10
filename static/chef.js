@@ -2,6 +2,8 @@ const orderList = document.getElementById("order-list");
 const apiBase = orderList?.dataset.apiBase || "/api/chef";
 const groupList = document.getElementById("group-list");
 const notification = document.getElementById("notification");
+const soundToggle = document.getElementById("sound-toggle");
+const SOUND_KEY = "chefSoundEnabled";
 let lastSeenId = null;
 let notificationTimer;
 
@@ -211,6 +213,21 @@ const playChime = () => {
   }
 };
 
+const getSoundEnabled = () => {
+  const stored = localStorage.getItem(SOUND_KEY);
+  if (stored === "true") {
+    return true;
+  }
+  if (stored === "false") {
+    return false;
+  }
+  return true;
+};
+
+const setSoundEnabled = (enabled) => {
+  localStorage.setItem(SOUND_KEY, enabled ? "true" : "false");
+};
+
 const handleNewOrders = (orders) => {
   if (!orders || orders.length === 0) {
     return;
@@ -227,7 +244,9 @@ const handleNewOrders = (orders) => {
   if (newestId > lastSeenId) {
     lastSeenId = newestId;
     showNotification();
-    playChime();
+    if (getSoundEnabled()) {
+      playChime();
+    }
   }
 };
 
@@ -248,6 +267,16 @@ const refreshOrders = async () => {
 
 refreshOrders();
 setInterval(refreshOrders, 5000);
+
+if (soundToggle) {
+  soundToggle.checked = getSoundEnabled();
+  soundToggle.addEventListener("change", () => {
+    setSoundEnabled(soundToggle.checked);
+    if (soundToggle.checked) {
+      playChime();
+    }
+  });
+}
 
 document.addEventListener("click", async (event) => {
     const statusButton = event.target.closest("button[data-status]");

@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title or "Desk Order" }}</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <meta name="theme-color" content="#3f5b2f" />
     <style>
       @font-face {
         font-family: "Thinoo";
@@ -423,6 +425,23 @@
         margin-bottom: 1rem;
         font-weight: 600;
       }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .toggle-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+      }
+      .toggle-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+      }
       .hidden {
         display: none;
       }
@@ -492,6 +511,13 @@
         color: var(--terracotta);
       }
     </style>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+        });
+      }
+    </script>
   </head>
   <body>
     <header>
