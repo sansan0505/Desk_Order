@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <img src="{{ url_for('static', filename='chef_plate.svg') }}" alt="Plate with cutlery illustration" />
+    <div>
+      <h2>Chef Dashboard</h2>
+      <p>Incoming orders arrive here and refresh automatically.</p>
+    </div>
+  </section>
+  <div id="notification" class="notice hidden">
+    New order received.
+  </div>
+  <div id="order-list" data-api-base="/api/chef/{{ chef_token }}" data-suggested-eta="{{ suggested_eta or '' }}">
+    {% if orders %}
+      {% for order in orders %}
+        <div class="card card-hero order-card" data-order-id="{{ order.id }}">
+          <div class="card-header">
+            <strong>{{ order.employee_name }}</strong>
+            <span class="status-pill status-{{ order.status|lower }}">{{ order.status }}</span>
+          </div>
+          <div class="muted">{{ order.created_at }}</div>
+          <p>{{ order.order_text }}</p>
+          {% if order.requirements %}
+            <p class="muted"><strong>Requirements:</strong> {{ order.requirements }}</p>
+          {% endif %}
+          <div class="prep-controls">
+            <label for="prep-{{ order.id }}">Prep (min)</label>
+            <input
+              id="prep-{{ order.id }}"
+              type="number"
+              min="1"
+              max="240"
+              value="{{ order.prep_minutes or '' }}"
+              placeholder="20"
+              {% if order.status == "Delivered" %}disabled{% endif %}
+            />
+            <button type="button" data-prep="true" data-order-id="{{ order.id }}" {% if order.status == "Delivered" %}disabled{% endif %}>
+              Start prep
+            </button>
+            {% if suggested_eta %}
+              <span class="chip">Suggested: {{ suggested_eta }} min</span>
+            {% endif %}
+          </div>
+          <div class="status-actions">
+            <button type="button" data-status="Preparing" data-order-id="{{ order.id }}" {% if order.status == "Delivered" %}disabled{% endif %}>Preparing</button>
+            <button type="button" data-status="Ready" data-order-id="{{ order.id }}" {% if order.status == "Delivered" %}disabled{% endif %}>Ready</button>
+            <button type="button" data-status="Delivered" data-order-id="{{ order.id }}" {% if order.status == "Delivered" %}disabled{% endif %}>Delivered</button>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="card card-hero">
+    <h2>Grouped Orders</h2>
+    <p class="muted">Similar orders grouped together for faster prep.</p>
+    <div id="group-list" class="group-list"></div>
+  </div>
+
+  <script src="{{ url_for('static', filename='chef.js') }}"></script>
+{% endblock %}

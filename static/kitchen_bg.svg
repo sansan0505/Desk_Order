@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" viewBox="0 0 520 520">
+  <rect width="520" height="520" fill="#d9e4cf"/>
+  <g opacity="0.8">
+    <rect x="0" y="0" width="130" height="130" fill="#e9f0e0"/>
+    <rect x="130" y="0" width="130" height="130" fill="#d9e5cf"/>
+    <rect x="260" y="0" width="130" height="130" fill="#e2ead6"/>
+    <rect x="390" y="0" width="130" height="130" fill="#d2dec8"/>
+
+    <rect x="0" y="130" width="130" height="130" fill="#d9e5cf"/>
+    <rect x="130" y="130" width="130" height="130" fill="#e9f0e0"/>
+    <rect x="260" y="130" width="130" height="130" fill="#d2dec8"/>
+    <rect x="390" y="130" width="130" height="130" fill="#e2ead6"/>
+
+    <rect x="0" y="260" width="130" height="130" fill="#e2ead6"/>
+    <rect x="130" y="260" width="130" height="130" fill="#d2dec8"/>
+    <rect x="260" y="260" width="130" height="130" fill="#e9f0e0"/>
+    <rect x="390" y="260" width="130" height="130" fill="#d9e5cf"/>
+
+    <rect x="0" y="390" width="130" height="130" fill="#d2dec8"/>
+    <rect x="130" y="390" width="130" height="130" fill="#e2ead6"/>
+    <rect x="260" y="390" width="130" height="130" fill="#d9e5cf"/>
+    <rect x="390" y="390" width="130" height="130" fill="#e9f0e0"/>
+  </g>
+</svg>

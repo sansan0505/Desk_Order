@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title or "Desk Order" }}</title>
+    <style>
+      @font-face {
+        font-family: "Thinoo";
+        src: url("{{ url_for('static', filename='fonts/thinoothin.otf') }}")
+          format("opentype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Thinoo";
+        src: url("{{ url_for('static', filename='fonts/thinoobold.otf') }}")
+          format("opentype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        color-scheme: light;
+        --cream: #fffdd0;
+        --paper: #fffdf9;
+        --olive: #3f5b2f;
+        --sage: #6f8a5a;
+        --terracotta: #4c6b37;
+        --terracotta-dark: #2f4a1f;
+        --border: #e5dccb;
+        --text: #2b2b24;
+        --muted: #6a6a5e;
+        --gold: #c6a66a;
+        --berry: #79945b;
+        --cream-dark: #fff2b6;
+      }
+      body {
+        font-family: "Thinoo", "Cambria", "Georgia", "Times New Roman", serif;
+        margin: 0;
+        max-width: none;
+        padding: 2rem 2.5rem 3rem;
+        background: #d6e2c7;
+        color: var(--text);
+        background-image:
+          linear-gradient(180deg, rgba(54, 80, 46, 0.18), rgba(54, 80, 46, 0.18)),
+          url("{{ url_for('static', filename='kitchen_bg.svg') }}");
+        background-repeat: repeat;
+        background-size: 520px auto;
+        background-attachment: fixed;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      header {
+        margin-bottom: 1.75rem;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        position: static;
+        overflow: visible;
+      }
+      header h1 {
+        margin: 0 0 0.5rem;
+        font-size: 4.2rem;
+        text-align: center;
+        color: var(--olive);
+        letter-spacing: 0.3px;
+        text-transform: none;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        
+      }
+      h2 {
+        font-weight: 700;
+      }
+      h3 {
+        margin: 0 0 0.5rem;
+        color: var(--olive);
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+      .menu-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+        display: inline-block;
+        text-align: center;
+        width: 100%;
+      }
+      .title-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        color: var(--olive);
+      }
+      .nav-icon {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        color: var(--olive);
+      }
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.2rem 1.4rem;
+        border-radius: 18px;
+        background: rgba(255, 247, 234, 0.6);
+        border: 1px solid var(--border);
+        margin-bottom: 1.2rem;
+        box-shadow: 0 14px 30px rgba(63, 91, 47, 0.18);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero img {
+        width: 120px;
+        height: 120px;
+        border-radius: 16px;
+        object-fit: cover;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 10px 22px rgba(63, 91, 47, 0.18);
+        transform: none;
+        transition: none;
+      }
+      .hero h2 {
+        margin: 0 0 0.4rem;
+        color: var(--olive);
+        font-size: 1.4rem;
+      }
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+      nav a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-right: 1rem;
+        color: var(--olive);
+        text-decoration: none;
+        font-weight: 600;
+        position: relative;
+      }
+      nav a:hover {
+        color: var(--text);
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.2rem;
+        background: rgba(255, 249, 239, 0.6);
+        box-shadow: 0 14px 28px rgba(63, 91, 47, 0.14);
+        transition: none;
+      }
+      .order-card {
+        border-color: var(--border);
+        box-shadow: none;
+      }
+      .card.card-hero {
+        border-radius: 18px;
+        background: rgba(255, 247, 234, 0.6);
+        box-shadow: 0 16px 30px rgba(63, 91, 47, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+      .card.card-hero::before {
+        content: none;
+      }
+      .order-form {
+        max-width: none;
+      }
+      .preset-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 0.6rem 0 1rem;
+      }
+      .menu-grid {
+        display: grid;
+        gap: 1rem;
+        margin: 0.6rem 0 1rem;
+      }
+      .menu-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+      .menu-section {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        background: rgba(255, 249, 239, 0.95);
+      }
+      .menu-item {
+        display: grid;
+        grid-template-columns: 104px 1fr;
+        gap: 0.6rem;
+        align-items: center;
+        padding: 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fffaf2;
+      }
+      .menu-details {
+        display: grid;
+        gap: 0.5rem;
+      }
+      .menu-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .menu-image {
+        width: 104px;
+        height: 104px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+      }
+      .menu-item[data-item="Nuts"] .menu-image {
+        object-position: center;
+      }
+      .menu-item[data-item="Horlicks"] .menu-image {
+        object-fit: cover;
+        object-position: center;
+      }
+      .menu-add {
+        margin-top: 0;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        box-shadow: none;
+      }
+      .menu-minus {
+        margin-top: 0;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        box-shadow: none;
+        background: #e6d7c4;
+        color: var(--olive);
+      }
+      .menu-minus:hover {
+        background: #d8c6ad;
+      }
+      .menu-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: #fffaf2;
+        border: 1px solid var(--border);
+        font-weight: 600;
+      }
+      .cart-list {
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        background: #fffaf2;
+        margin: 0.4rem 0 0.8rem;
+      }
+      .cart-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        margin-bottom: 0.5rem;
+      }
+      .cart-item strong {
+        flex: 1;
+      }
+      .cart-qty {
+        min-width: 48px;
+        text-align: right;
+      }
+      .cart-item:last-child {
+        margin-bottom: 0;
+      }
+      .cart-actions button {
+        margin-top: 0;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.8rem;
+        box-shadow: none;
+      }
+      .preset-button {
+        border: 1px solid var(--border);
+        background: #ffffff;
+        color: var(--text);
+        padding: 0.45rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .preset-button:hover {
+        background: #f0f0f0;
+      }
+      .group-list {
+        display: grid;
+        gap: 0.8rem;
+        margin-top: 0.6rem;
+      }
+      .group-item {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0.8rem 1rem;
+        background: #ffffff;
+      }
+      .group-item strong {
+        display: inline-block;
+        margin-right: 0.5rem;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        background: #f0f0f0;
+        color: var(--text);
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.35rem;
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        background: #e6d7c4;
+        color: var(--olive);
+      }
+      .status-pill.status-pending {
+        background: #eee1cf;
+        border-color: #d9cbb8;
+      }
+      .status-pill.status-preparing {
+        background: #dbe5cf;
+        border-color: #b8c7a6;
+        color: #3b5b2d;
+      }
+      .status-pill.status-ready {
+        background: #cfe2c1;
+        border-color: #a9c293;
+        color: #2f4a1f;
+      }
+      .status-pill.status-delivered {
+        background: #e4d7c6;
+        border-color: #ccbda7;
+        color: #4b4b3d;
+      }
+      .status-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .status-actions button {
+        margin-top: 0;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        box-shadow: none;
+      }
+      .prep-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .prep-controls input {
+        width: 120px;
+      }
+      .progress {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        background: #e6d7c4;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin-top: 0.6rem;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #4c6b37, #7da055);
+        transition: width 0.4s ease;
+      }
+      .notice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.7rem 1rem;
+        border-radius: 12px;
+        border: 1px solid #d9cbb8;
+        background: #fff7ea;
+        color: var(--olive);
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+      .hidden {
+        display: none;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-top: 0.85rem;
+        color: var(--olive);
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        margin-top: 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--text);
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: none;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: 2px solid rgba(200, 107, 74, 0.25);
+        border-color: var(--terracotta);
+        box-shadow: 0 0 0 4px rgba(200, 107, 74, 0.12);
+      }
+      button {
+        margin-top: 1.2rem;
+        padding: 0.7rem 1.4rem;
+        background: #4c6b37;
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        box-shadow: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      button:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      button:focus {
+        outline: 2px solid #111111;
+        outline-offset: 2px;
+      }
+      .error {
+        color: #111111;
+        font-weight: 600;
+        background: #f5f5f5;
+        border: 1px solid #dddddd;
+        padding: 0.6rem 0.8rem;
+        border-radius: 10px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      a {
+        color: var(--olive);
+      }
+      a:hover {
+        color: var(--terracotta);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>{{ title or "Desk Order" }}</h1>
+      {% if nav_links %}
+        <nav>
+          {% for link in nav_links %}
+            <a href="{{ link.href }}">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" role="img">
+                  <path d="M12 3l8 5v11a2 2 0 0 1-2 2h-4v-6H10v6H6a2 2 0 0 1-2-2V8l8-5z" />
+                </svg>
+              </span>
+              {{ link.label }}
+            </a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </header>
+    {% block content %}{% endblock %}
+  </body>
+</html>

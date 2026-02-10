@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs>
+    <radialGradient id="melon" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#e24d4d"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="240" height="240" rx="28" fill="#fffaf2"/>
+
+  <g>
+    <path d="M36 152 C62 84, 178 84, 204 152 Z" fill="url(#melon)"/>
+    <path d="M36 152 C62 84, 178 84, 204 152" fill="none" stroke="#2f7a3e" stroke-width="12" stroke-linecap="round"/>
+    <path d="M48 146 C72 94, 168 94, 192 146" fill="none" stroke="#e9f0d4" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <g fill="#2b2b24">
+    <ellipse cx="88" cy="124" rx="4" ry="6"/>
+    <ellipse cx="110" cy="116" rx="4" ry="6"/>
+    <ellipse cx="132" cy="124" rx="4" ry="6"/>
+    <ellipse cx="154" cy="118" rx="4" ry="6"/>
+  </g>
+</svg>

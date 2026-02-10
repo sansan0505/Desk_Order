@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: desk-order
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn order:app
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: EMPLOYEE_TOKEN
+        value: employee-access
+      - key: CHEF_TOKEN
+        value: chef-access

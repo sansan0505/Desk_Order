@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <img src="{{ url_for('static', filename='food_hero.svg') }}" alt="Salad bowl illustration" />
+    <div>
+      <h2>Fresh Desk Dining</h2>
+      <p>Share your name and order. The chef handles the rest.</p>
+    </div>
+  </section>
+  <div class="card card-hero">
+    <p class="muted">
+      Order whatever you like. It will be served at your desk.
+    </p>
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+    <p class="muted">
+      Signed in as <strong>{{ employee_name }}</strong>.
+      <a href="{{ url_for('employee_logout', token=employee_token) }}">Change name</a>
+    </p>
+    <div id="preset-list" class="preset-list" data-api-base="/api/employee/{{ employee_token }}"></div>
+    <form class="order-form" method="post" action="{{ url_for('place_order', token=employee_token) }}">
+      <label class="menu-title">Menu</label>
+      <div class="menu-grid">
+        {% for category, items in menu.items() %}
+          <div class="menu-section">
+            <h3>{{ category }}</h3>
+            <div class="menu-items">
+              {% for item in items %}
+                <div class="menu-item" data-item="{{ item.name }}">
+                  <img class="menu-image" src="{{ item.image }}" alt="{{ item.name }}" loading="lazy" />
+                  <div class="menu-details">
+                    <span class="menu-name">{{ item.name }}</span>
+                    <div class="menu-controls">
+                      <span class="menu-count" data-count="0">0</span>
+                      <button type="button" class="menu-minus" aria-label="Remove {{ item.name }}">-</button>
+                      <button type="button" class="menu-add" aria-label="Add {{ item.name }}">+</button>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <label>Selected Items</label>
+      <div id="cart-list" class="cart-list"></div>
+      <input type="hidden" id="order_items_json" name="order_items_json" />
+
+      <label for="requirements">Additional requirements</label>
+      <textarea
+        id="requirements"
+        name="requirements"
+        rows="3"
+        placeholder="Example: No onions, allergy to peanuts"
+      >{{ requirements or '' }}</textarea>
+
+      <button type="submit">Place Order</button>
+    </form>
+  </div>
+  <script src="{{ url_for('static', filename='employee.js') }}"></script>
+{% endblock %}

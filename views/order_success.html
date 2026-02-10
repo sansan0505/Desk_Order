@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Order Received</h2>
+    {% if employee_name %}
+      <p>Thanks, {{ employee_name }}. Your order has been sent to the chef.</p>
+    {% else %}
+      <p>Your order has been sent to the chef.</p>
+    {% endif %}
+    <p class="muted">
+      If you need to make changes, submit a new order.
+    </p>
+    <a href="{{ url_for('index') }}">Place another order</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <img src="{{ url_for('static', filename='food_hero.svg') }}" alt="Salad bowl illustration" />
+    <div>
+      <h2>Order Status</h2>
+      <p>We will keep this updated while the kitchen prepares your meal.</p>
+    </div>
+  </section>
+  <div
+    class="card order-card{% if order.status == 'Preparing' %} card-hero{% endif %}"
+    data-order-id="{{ order.id }}"
+    data-api-base="/api/employee/{{ employee_token }}"
+  >
+    <div class="card-header">
+      <strong>{{ employee_name or "Your order" }}</strong>
+      <span id="status-pill" class="status-pill status-{{ order.status|lower }}">{{ order.status }}</span>
+    </div>
+    <div class="muted" id="order-time">{{ order.created_at }}</div>
+    <p id="order-text">{{ order.order_text }}</p>
+    {% if order.requirements %}
+      <p class="muted"><strong>Requirements:</strong> {{ order.requirements }}</p>
+    {% endif %}
+    <div id="progress-wrapper" class="progress hidden">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+    <p class="muted" id="progress-text"></p>
+    <p class="muted" id="status-message">Status updates appear here automatically.</p>
+    <a href="{{ url_for('employee_order', token=employee_token) }}">Place another order</a>
+  </div>
+
+  {% if previous_orders %}
+    <h3>Previous orders</h3>
+    {% for prev in previous_orders %}
+      <div class="card order-card">
+        <div class="card-header">
+          <strong>{{ prev.order_text }}</strong>
+          <span class="status-pill status-{{ prev.status|lower }}">{{ prev.status }}</span>
+        </div>
+        <div class="muted">{{ prev.created_at }}</div>
+        {% if prev.requirements %}
+          <p class="muted"><strong>Requirements:</strong> {{ prev.requirements }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+  <script src="{{ url_for('static', filename='employee_status.js') }}"></script>
+{% endblock %}
