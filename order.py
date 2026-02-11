@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
 import json
@@ -97,6 +97,10 @@ def get_smart_eta_minutes():
         return int(round(sum(durations) / len(durations)))
 
     return None
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
 NEXT_ORDER_ID = 1
 NEXT_PRESET_ID = 1
@@ -215,7 +219,7 @@ def place_order(token: str):
         "order_items": order_items,
         "requirements": requirements,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "created_at_iso": datetime.now().isoformat(),
+        "created_at_iso": now_iso(),
         "status": "Pending",
         "prep_minutes": None,
         "prep_started_at": None,
@@ -318,9 +322,9 @@ def update_order_status(token: str, order_id: int):
 
     order["status"] = status
     if status == "Ready":
-        order["ready_at"] = datetime.now().isoformat()
+        order["ready_at"] = now_iso()
     if status == "Delivered":
-        order["delivered_at"] = datetime.now().isoformat()
+        order["delivered_at"] = now_iso()
     return jsonify(order)
 
 
@@ -342,7 +346,7 @@ def update_prep_time(token: str, order_id: int):
         return jsonify({"error": "Order not found"}), 404
 
     order["prep_minutes"] = minutes
-    order["prep_started_at"] = datetime.now().isoformat()
+    order["prep_started_at"] = now_iso()
     order["status"] = "Preparing"
     return jsonify(order)
 
