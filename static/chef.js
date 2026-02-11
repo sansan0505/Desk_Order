@@ -47,6 +47,12 @@ const renderOrders = (orders) => {
     card.appendChild(header);
     card.appendChild(time);
     card.appendChild(text);
+    if (order.requirements) {
+      const req = document.createElement("p");
+      req.className = "muted";
+      req.textContent = `Requirements: ${order.requirements}`;
+      card.appendChild(req);
+    }
 
     const prepControls = document.createElement("div");
     prepControls.className = "prep-controls";
