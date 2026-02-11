@@ -10,7 +10,7 @@
     </radialGradient>
   </defs>
 
-  <rect width="240" height="240" rx="28" fill="#fffaf2"/>
+  <rect width="240" height="240" rx="28" fill="none"/>
 
   <path d="M56 60 L184 96 L120 188 Z" fill="url(#crust)"/>
   <path d="M66 74 L174 102 L120 174 Z" fill="url(#cheese)"/>

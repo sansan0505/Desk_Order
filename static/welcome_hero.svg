@@ -6,7 +6,7 @@
     </radialGradient>
   </defs>
 
-  <rect width="240" height="240" rx="28" fill="#fffaf2"/>
+  <rect width="240" height="240" rx="28" fill="none"/>
 
   <g>
     <path d="M36 152 C62 84, 178 84, 204 152 Z" fill="url(#melon)"/>
