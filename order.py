@@ -57,7 +57,7 @@ EMPLOYEE_TOKEN = os.getenv("EMPLOYEE_TOKEN", "employee-access")
 CHEF_TOKEN = os.getenv("CHEF_TOKEN", "chef-access")
 
 def prune_orders():
-    cutoff = datetime.now() - timedelta(hours=12)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
     kept = []
     for order in ORDERS:
         created_iso = order.get("created_at_iso")
@@ -71,7 +71,9 @@ def prune_orders():
             try:
                 created_at = datetime.strptime(order.get("created_at", ""), "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                created_at = datetime.now()
+                created_at = datetime.now(timezone.utc)
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
         if created_at >= cutoff:
             kept.append(order)
     ORDERS.clear()
