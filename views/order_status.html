@@ -16,7 +16,7 @@
       <strong>{{ employee_name or "Your order" }}</strong>
       <span id="status-pill" class="status-pill status-{{ order.status|lower }}">{{ order.status }}</span>
     </div>
-    <div class="muted" id="order-time">{{ order.created_at }}</div>
+    <div class="muted" id="order-time" data-created-iso="{{ order.created_at_iso }}">{{ order.created_at }}</div>
     <p id="order-text">{{ order.order_text }}</p>
     {% if order.requirements %}
       <p class="muted"><strong>Requirements:</strong> {{ order.requirements }}</p>

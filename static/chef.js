@@ -7,6 +7,15 @@ const SOUND_KEY = "chefSoundEnabled";
 let lastSeenId = null;
 let notificationTimer;
 
+const formatTimestamp = (order) => {
+  const iso = order?.created_at_iso || order?.created_at || "";
+  const parsed = iso ? Date.parse(iso) : NaN;
+  if (Number.isFinite(parsed)) {
+    return new Date(parsed).toLocaleString();
+  }
+  return order?.created_at || "";
+};
+
 const renderOrders = (orders) => {
   if (!orderList) {
     return;
@@ -37,7 +46,7 @@ const renderOrders = (orders) => {
 
     const time = document.createElement("div");
     time.className = "muted";
-    time.textContent = order.created_at || "";
+    time.textContent = formatTimestamp(order);
 
     const text = document.createElement("p");
     text.textContent = order.order_text || "";

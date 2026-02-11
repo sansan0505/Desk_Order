@@ -2,6 +2,7 @@ const statusCard = document.querySelector("[data-order-id]");
 const apiBase = statusCard?.dataset.apiBase || "/api/employee";
 const statusPill = document.getElementById("status-pill");
 const statusMessage = document.getElementById("status-message");
+const orderTime = document.getElementById("order-time");
 const progressWrapper = document.getElementById("progress-wrapper");
 const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
@@ -21,6 +22,13 @@ const updateStatusUi = (order) => {
   statusPill.textContent = status;
   statusPill.className = `status-pill status-${status.toLowerCase()}`;
   statusMessage.textContent = statusMessages[status] || "Status updated.";
+  if (orderTime) {
+    const iso = order.created_at_iso || orderTime.dataset.createdIso || order.created_at;
+    const parsed = iso ? Date.parse(iso) : NaN;
+    if (Number.isFinite(parsed)) {
+      orderTime.textContent = new Date(parsed).toLocaleString();
+    }
+  }
 
   if (!progressWrapper || !progressBar || !progressText) {
     return;
