@@ -100,6 +100,30 @@ def prune_orders():
     ORDERS.clear()
     ORDERS.extend(kept)
 
+
+def get_order_created_at(order: dict):
+    created_iso = order.get("created_at_iso")
+    if created_iso:
+        try:
+            created_at = datetime.fromisoformat(created_iso)
+        except ValueError:
+            created_at = None
+    else:
+        created_at = None
+    if not created_at:
+        try:
+            created_at = datetime.strptime(order.get("created_at", ""), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            created_at = datetime.now(timezone.utc)
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    return created_at
+
+
+def filter_recent_orders(orders: list, hours: int):
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    return [order for order in orders if get_order_created_at(order) >= cutoff]
+
 def get_smart_eta_minutes():
     durations = []
     for order in reversed(ORDERS):
@@ -356,7 +380,8 @@ def chef_dashboard(token: str):
         return "Not found", 404
     prune_orders()
     suggested_eta = get_smart_eta_minutes()
-    orders_sorted = sorted(ORDERS, key=lambda item: item.get("id", 0), reverse=True)
+    recent_orders = filter_recent_orders(ORDERS, 1)
+    orders_sorted = sorted(recent_orders, key=lambda item: item.get("id", 0), reverse=True)
     return render_template(
         "chef.html",
         orders=orders_sorted,
@@ -371,7 +396,8 @@ def orders_api(token: str):
         return jsonify({"error": "Not found"}), 404
     prune_orders()
     suggested_eta = get_smart_eta_minutes()
-    orders_sorted = sorted(ORDERS, key=lambda item: item.get("id", 0), reverse=True)
+    recent_orders = filter_recent_orders(ORDERS, 1)
+    orders_sorted = sorted(recent_orders, key=lambda item: item.get("id", 0), reverse=True)
     orders = []
     for order in orders_sorted:
         item = dict(order)
