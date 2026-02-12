@@ -10,6 +10,7 @@
   <div id="lunch-ready-banner" class="notice hidden" data-api-base="/api/employee/{{ employee_token }}">
     Lunch is ready.
   </div>
+  <div id="mate-order-banner" class="notice hidden" data-api-base="/api/employee/{{ employee_token }}"></div>
   <div
     class="card order-card{% if order.status == 'Preparing' %} card-hero{% endif %}"
     data-order-id="{{ order.id }}"

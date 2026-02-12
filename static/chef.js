@@ -1,9 +1,11 @@
 const orderList = document.getElementById("order-list");
 const apiBase = orderList?.dataset.apiBase || "/api/chef";
 const groupList = document.getElementById("group-list");
+const groupedOrdersCard = document.getElementById("grouped-orders-card");
 const notification = document.getElementById("notification");
 const soundToggle = document.getElementById("sound-toggle");
 const lunchReadyToggle = document.getElementById("lunch-ready-toggle");
+const chefMenuGrid = document.getElementById("chef-menu-grid");
 const SOUND_KEY = "chefSoundEnabled";
 const LUNCH_KEY = "lunchReadyState";
 let lastSeenId = null;
@@ -57,6 +59,12 @@ const renderOrders = (orders) => {
     header.appendChild(status);
     card.appendChild(header);
     card.appendChild(time);
+    if (order.mate_name) {
+      const mate = document.createElement("p");
+      mate.className = "muted";
+      mate.textContent = `For: ${order.mate_name}`;
+      card.appendChild(mate);
+    }
     card.appendChild(text);
     if (order.requirements) {
       const req = document.createElement("p");
@@ -156,10 +164,9 @@ const renderGroups = (orders) => {
   }
   groupList.replaceChildren();
   if (!orders || orders.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "No grouped items yet.";
-    groupList.appendChild(empty);
+    if (groupedOrdersCard) {
+      groupedOrdersCard.classList.add("hidden");
+    }
     return;
   }
 
@@ -179,11 +186,17 @@ const renderGroups = (orders) => {
 
   const groupedItems = Array.from(totals.values()).filter((item) => item.qty > 1);
   if (groupedItems.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "No grouped items yet.";
-    groupList.appendChild(empty);
+    if (groupedOrdersCard) {
+      groupedOrdersCard.classList.add("hidden");
+    }
     return;
+  }
+
+  if (groupedOrdersCard) {
+    groupedOrdersCard.classList.remove("hidden");
+    if (orderList && groupedOrdersCard.previousElementSibling !== orderList) {
+      orderList.insertAdjacentElement("afterend", groupedOrdersCard);
+    }
   }
 
   groupedItems
@@ -196,6 +209,72 @@ const renderGroups = (orders) => {
       item.appendChild(title);
       groupList.appendChild(item);
     });
+};
+
+const renderChefMenu = (items) => {
+  if (!chefMenuGrid) {
+    return;
+  }
+  chefMenuGrid.replaceChildren();
+  if (!items || items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No menu items available.";
+    chefMenuGrid.appendChild(empty);
+    return;
+  }
+  const grouped = new Map();
+  items.forEach((item) => {
+    const category = item.category || "Menu";
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+    grouped.get(category).push(item);
+  });
+  Array.from(grouped.entries()).forEach(([category, entries]) => {
+    const section = document.createElement("div");
+    section.className = "menu-section";
+    const title = document.createElement("h3");
+    title.textContent = category;
+    section.appendChild(title);
+    const list = document.createElement("div");
+    list.className = "menu-items";
+    entries.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "menu-item chef-menu-item";
+      if (!item.available) {
+        row.classList.add("is-unavailable");
+      }
+      row.dataset.name = item.name || "";
+      const image = document.createElement("img");
+      image.className = "menu-image";
+      image.src = item.image || "";
+      image.alt = item.name || "Menu item";
+      image.loading = "lazy";
+      const details = document.createElement("div");
+      details.className = "menu-details";
+      const name = document.createElement("span");
+      name.className = "menu-name";
+      name.textContent = item.name || "";
+      const controls = document.createElement("div");
+      controls.className = "menu-controls menu-toggle";
+      const toggle = document.createElement("input");
+      toggle.type = "checkbox";
+      toggle.checked = Boolean(item.available);
+      toggle.dataset.name = item.name || "";
+      const label = document.createElement("span");
+      label.textContent = "In stock";
+      controls.appendChild(toggle);
+      controls.appendChild(label);
+      details.appendChild(name);
+      details.appendChild(controls);
+      row.appendChild(image);
+      row.appendChild(details);
+      list.appendChild(row);
+    });
+    section.appendChild(list);
+    chefMenuGrid.appendChild(section);
+  });
 };
 
 
@@ -325,6 +404,57 @@ if (lunchReadyToggle) {
   });
   refreshLunchReady();
   setInterval(refreshLunchReady, 8000);
+}
+
+const refreshChefMenu = async () => {
+  if (!chefMenuGrid) {
+    return;
+  }
+  const apiBase = chefMenuGrid.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/menu`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    renderChefMenu(data);
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+if (chefMenuGrid) {
+  chefMenuGrid.addEventListener("change", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    const name = target.dataset.name || "";
+    if (!name) {
+      return;
+    }
+    const apiBase = chefMenuGrid.dataset.apiBase;
+    if (!apiBase) {
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBase}/menu/availability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, available: target.checked }),
+      });
+      if (response.ok) {
+        refreshChefMenu();
+      }
+    } catch (error) {
+      // Ignore transient network errors.
+    }
+  });
+  refreshChefMenu();
+  setInterval(refreshChefMenu, 5000);
 }
 
 if (soundToggle) {

@@ -326,6 +326,31 @@
         padding: 0.75rem 0.9rem;
         background: var(--panel-strong);
       }
+      .menu-availability {
+        display: grid;
+        gap: 1rem;
+        margin-top: 0.6rem;
+      }
+      .menu-availability-section {
+        display: grid;
+        gap: 0.5rem;
+      }
+      .menu-availability-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid rgba(125, 249, 255, 0.25);
+        border-radius: 10px;
+        background: rgba(10, 12, 30, 0.6);
+        cursor: pointer;
+      }
+      .menu-availability-item input {
+        margin: 0;
+      }
+      .menu-availability-item.is-unavailable {
+        opacity: 0.5;
+      }
       .menu-item {
         display: grid;
         grid-template-columns: 104px 1fr;
@@ -344,6 +369,14 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+      }
+      .menu-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+      }
+      .chef-menu-item.is-unavailable {
+        opacity: 0.55;
       }
       .menu-image {
         width: 104px;

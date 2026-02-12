@@ -7,7 +7,9 @@ const progressWrapper = document.getElementById("progress-wrapper");
 const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
 const lunchBanner = document.getElementById("lunch-ready-banner");
+const mateBanner = document.getElementById("mate-order-banner");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
+const MATE_SEEN_KEY = "mateOrderSeenIds";
 
 const statusMessages = {
   Pending: "Chef has received your order.",
@@ -94,6 +96,20 @@ const showLunchNotification = () => {
   playChime();
 };
 
+const showMateNotification = (order) => {
+  const employee = order.employee_name || "Someone";
+  const items = order.order_text || "an order";
+  const message = `${employee} has ordered ${items} for you.`;
+  if (mateBanner) {
+    mateBanner.textContent = message;
+    mateBanner.classList.remove("hidden");
+  }
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Order for you", { body: message });
+  }
+  playChime();
+};
+
 const refreshLunchReady = async () => {
   if (!lunchBanner) {
     return;
@@ -126,6 +142,55 @@ const refreshLunchReady = async () => {
   }
 };
 
+const getSeenMateIds = () => {
+  try {
+    const raw = localStorage.getItem(MATE_SEEN_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const setSeenMateIds = (ids) => {
+  localStorage.setItem(MATE_SEEN_KEY, JSON.stringify(ids));
+};
+
+const refreshMateOrders = async () => {
+  if (!mateBanner) {
+    return;
+  }
+  const apiBase = mateBanner.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/mate-orders`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      mateBanner.classList.add("hidden");
+      return;
+    }
+    const seenIds = new Set(getSeenMateIds());
+    const newest = data.find((item) => !seenIds.has(item.id));
+    if (newest) {
+      seenIds.add(newest.id);
+      setSeenMateIds(Array.from(seenIds));
+      showMateNotification(newest);
+    } else {
+      const last = data[0];
+      const employee = last.employee_name || "Someone";
+      const items = last.order_text || "an order";
+      mateBanner.textContent = `${employee} has ordered ${items} for you.`;
+      mateBanner.classList.remove("hidden");
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
 const refreshStatus = async () => {
   if (!statusCard) {
     return;
@@ -150,3 +215,5 @@ refreshStatus();
 setInterval(refreshStatus, 5000);
 refreshLunchReady();
 setInterval(refreshLunchReady, 10000);
+refreshMateOrders();
+setInterval(refreshMateOrders, 10000);

@@ -53,9 +53,27 @@ MENU = {
     ],
 }
 
+# Track menu availability by item name (lowercased).
+MENU_AVAILABILITY = {}
+
 # Simple access separation via private URLs.
 EMPLOYEE_TOKEN = os.getenv("EMPLOYEE_TOKEN", "employee-access")
 CHEF_TOKEN = os.getenv("CHEF_TOKEN", "chef-access")
+
+
+def normalize_item_name(name: str) -> str:
+    return str(name or "").strip().lower()
+
+
+def init_menu_availability():
+    for items in MENU.values():
+        for item in items:
+            key = normalize_item_name(item.get("name", ""))
+            if key and key not in MENU_AVAILABILITY:
+                MENU_AVAILABILITY[key] = True
+
+
+init_menu_availability()
 
 def prune_orders():
     cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
@@ -104,6 +122,24 @@ def get_smart_eta_minutes():
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+
+def menu_items_with_availability():
+    items = []
+    for category, entries in MENU.items():
+        for entry in entries:
+            name = entry.get("name", "")
+            key = normalize_item_name(name)
+            available = MENU_AVAILABILITY.get(key, True)
+            items.append(
+                {
+                    "name": name,
+                    "image": entry.get("image", ""),
+                    "category": category,
+                    "available": available,
+                }
+            )
+    return items
 
 NEXT_ORDER_ID = 1
 NEXT_PRESET_ID = 1
@@ -182,6 +218,7 @@ def place_order(token: str):
     order_items_json = request.form.get("order_items_json", "").strip()
     order_text = request.form.get("order_text", "").strip()
     requirements = request.form.get("requirements", "").strip()
+    mate_name = request.form.get("mate_name", "").strip()
     order_items = []
 
     if order_items_json:
@@ -206,6 +243,7 @@ def place_order(token: str):
             employee_name=employee_name,
             order_text=order_text,
             requirements=requirements,
+            mate_name=mate_name,
             employee_token=token,
             menu=MENU,
         )
@@ -218,6 +256,7 @@ def place_order(token: str):
     order = {
         "id": NEXT_ORDER_ID,
         "employee_name": employee_name,
+        "mate_name": mate_name,
         "order_text": order_text,
         "order_items": order_items,
         "requirements": requirements,
@@ -298,6 +337,37 @@ def orders_api(token: str):
     return jsonify(orders)
 
 
+@app.get("/api/employee/<token>/menu")
+def employee_menu_api(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    items = [item for item in menu_items_with_availability() if item["available"]]
+    return jsonify(items)
+
+
+@app.get("/api/chef/<token>/menu")
+def chef_menu_api(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(menu_items_with_availability())
+
+
+@app.post("/api/chef/<token>/menu/availability")
+def chef_menu_availability_update(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    payload = request.get_json(silent=True) or {}
+    name = str(payload.get("name", "")).strip()
+    available = payload.get("available")
+    if not name or available is None:
+        return jsonify({"error": "Name and availability required"}), 400
+    key = normalize_item_name(name)
+    if not key:
+        return jsonify({"error": "Invalid item"}), 400
+    MENU_AVAILABILITY[key] = bool(available)
+    return jsonify({"name": name, "available": MENU_AVAILABILITY[key]})
+
+
 @app.get("/api/employee/<token>/orders/<int:order_id>")
 def order_detail_api(token: str, order_id: int):
     if not is_employee_token(token):
@@ -314,6 +384,27 @@ def lunch_ready_status(token: str):
     if not is_employee_token(token):
         return jsonify({"error": "Not found"}), 404
     return jsonify(LUNCH_READY)
+
+
+@app.get("/api/employee/<token>/mate-orders")
+def employee_mate_orders(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip()
+    if not employee_name:
+        return jsonify([])
+    matches = []
+    for order in ORDERS:
+        mate_name = str(order.get("mate_name", "")).strip()
+        if mate_name and mate_name.lower() == employee_name.lower():
+            matches.append(
+                {
+                    "id": order.get("id"),
+                    "employee_name": order.get("employee_name", ""),
+                    "order_text": order.get("order_text", ""),
+                }
+            )
+    return jsonify(matches)
 
 
 @app.post("/api/chef/<token>/orders/<int:order_id>/status")

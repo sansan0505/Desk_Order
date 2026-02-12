@@ -10,20 +10,6 @@
   <div id="notification" class="notice hidden">
     New order received.
   </div>
-  <div class="card card-hero toggle-row">
-    <label for="sound-toggle">
-      <input id="sound-toggle" type="checkbox" />
-      Play sound on new orders
-    </label>
-    <span class="muted">Click once to enable audio in your browser.</span>
-  </div>
-  <div class="card card-hero toggle-row">
-    <label for="lunch-ready-toggle">
-      <input id="lunch-ready-toggle" type="checkbox" />
-      Lunch is ready
-    </label>
-    <span class="muted">Notify everyone instantly.</span>
-  </div>
   <div id="order-list" data-api-base="/api/chef/{{ chef_token }}" data-suggested-eta="{{ suggested_eta or '' }}">
     {% if orders %}
       {% for order in orders %}
@@ -33,6 +19,9 @@
             <span class="status-pill status-{{ order.status|lower }}">{{ order.status }}</span>
           </div>
           <div class="muted">{{ order.created_at }}</div>
+          {% if order.mate_name %}
+            <p class="muted"><strong>For:</strong> {{ order.mate_name }}</p>
+          {% endif %}
           <p>{{ order.order_text }}</p>
           {% if order.requirements %}
             <p class="muted"><strong>Requirements:</strong> {{ order.requirements }}</p>
@@ -64,10 +53,30 @@
       {% endfor %}
     {% endif %}
   </div>
-  <div class="card card-hero">
+  <div class="card card-hero" id="grouped-orders-card">
     <h2>Grouped Orders</h2>
     <p class="muted">Similar orders grouped together for faster prep.</p>
     <div id="group-list" class="group-list"></div>
+  </div>
+  <div class="card card-hero toggle-row">
+    <label for="sound-toggle">
+      <input id="sound-toggle" type="checkbox" />
+      Play sound on new orders
+    </label>
+    <span class="muted">Click once to enable audio in your browser.</span>
+  </div>
+  <div class="card card-hero toggle-row">
+    <label for="lunch-ready-toggle">
+      <input id="lunch-ready-toggle" type="checkbox" />
+      Lunch is ready
+    </label>
+    <span class="muted">Notify everyone instantly.</span>
+  </div>
+  <div class="card card-hero">
+    <label class="menu-title">Menu (availability)</label>
+    <div id="chef-menu-grid" class="menu-grid" data-api-base="/api/chef/{{ chef_token }}">
+      <p class="muted">Loading menu...</p>
+    </div>
   </div>
 
   <script src="{{ url_for('static', filename='chef.js') }}"></script>

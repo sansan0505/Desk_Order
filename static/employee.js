@@ -4,7 +4,9 @@ const cartList = document.getElementById("cart-list");
 const cartInput = document.getElementById("order_items_json");
 const requirementsField = document.getElementById("requirements");
 const lunchBanner = document.getElementById("lunch-ready-banner");
+const mateBanner = document.getElementById("mate-order-banner");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
+const MATE_SEEN_KEY = "mateOrderSeenIds";
 const cart = new Map();
 
 const renderCart = () => {
@@ -72,6 +74,98 @@ const renderCart = () => {
   }
 };
 
+const renderMenu = (items) => {
+  if (!menuGrid) {
+    return;
+  }
+  menuGrid.replaceChildren();
+  if (!items || items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No items available right now.";
+    menuGrid.appendChild(empty);
+    return;
+  }
+  const grouped = new Map();
+  items.forEach((item) => {
+    const category = item.category || "Menu";
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+    grouped.get(category).push(item);
+  });
+  Array.from(grouped.entries()).forEach(([category, entries]) => {
+    const section = document.createElement("div");
+    section.className = "menu-section";
+    const title = document.createElement("h3");
+    title.textContent = category;
+    section.appendChild(title);
+    const list = document.createElement("div");
+    list.className = "menu-items";
+    entries.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "menu-item";
+      row.dataset.item = item.name || "";
+      const image = document.createElement("img");
+      image.className = "menu-image";
+      image.src = item.image || "";
+      image.alt = item.name || "Menu item";
+      image.loading = "lazy";
+      const details = document.createElement("div");
+      details.className = "menu-details";
+      const name = document.createElement("span");
+      name.className = "menu-name";
+      name.textContent = item.name || "";
+      const controls = document.createElement("div");
+      controls.className = "menu-controls";
+      const count = document.createElement("span");
+      count.className = "menu-count";
+      count.dataset.count = "0";
+      count.textContent = String(cart.get(item.name) || 0);
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "menu-minus";
+      minus.setAttribute("aria-label", `Remove ${item.name}`);
+      minus.textContent = "-";
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "menu-add";
+      add.setAttribute("aria-label", `Add ${item.name}`);
+      add.textContent = "+";
+      controls.appendChild(count);
+      controls.appendChild(minus);
+      controls.appendChild(add);
+      details.appendChild(name);
+      details.appendChild(controls);
+      row.appendChild(image);
+      row.appendChild(details);
+      list.appendChild(row);
+    });
+    section.appendChild(list);
+    menuGrid.appendChild(section);
+  });
+};
+
+const refreshMenu = async () => {
+  if (!menuGrid) {
+    return;
+  }
+  const apiBase = menuGrid.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/menu`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    renderMenu(data);
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
 const renderPresets = (presets) => {
   if (!presetList) {
     return;
@@ -119,7 +213,9 @@ const refreshPresets = async () => {
 };
 
 refreshPresets();
+refreshMenu();
 renderCart();
+setInterval(refreshMenu, 15000);
 
 const playChime = () => {
   try {
@@ -149,6 +245,20 @@ const showLunchNotification = () => {
     new Notification("Lunch is ready", {
       body: "Lunch is ready.",
     });
+  }
+  playChime();
+};
+
+const showMateNotification = (order) => {
+  const employee = order.employee_name || "Someone";
+  const items = order.order_text || "an order";
+  const message = `${employee} has ordered ${items} for you.`;
+  if (mateBanner) {
+    mateBanner.textContent = message;
+    mateBanner.classList.remove("hidden");
+  }
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Order for you", { body: message });
   }
   playChime();
 };
@@ -187,6 +297,58 @@ const refreshLunchReady = async () => {
 
 refreshLunchReady();
 setInterval(refreshLunchReady, 10000);
+
+const getSeenMateIds = () => {
+  try {
+    const raw = localStorage.getItem(MATE_SEEN_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const setSeenMateIds = (ids) => {
+  localStorage.setItem(MATE_SEEN_KEY, JSON.stringify(ids));
+};
+
+const refreshMateOrders = async () => {
+  if (!mateBanner) {
+    return;
+  }
+  const apiBase = mateBanner.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/mate-orders`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      mateBanner.classList.add("hidden");
+      return;
+    }
+    const seenIds = new Set(getSeenMateIds());
+    const newest = data.find((item) => !seenIds.has(item.id));
+    if (newest) {
+      seenIds.add(newest.id);
+      setSeenMateIds(Array.from(seenIds));
+      showMateNotification(newest);
+    } else {
+      const last = data[0];
+      const employee = last.employee_name || "Someone";
+      const items = last.order_text || "an order";
+      mateBanner.textContent = `${employee} has ordered ${items} for you.`;
+      mateBanner.classList.remove("hidden");
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+refreshMateOrders();
+setInterval(refreshMateOrders, 10000);
 
 if (menuGrid) {
   menuGrid.addEventListener("click", (event) => {
