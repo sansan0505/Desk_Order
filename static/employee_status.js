@@ -3,12 +3,9 @@ const apiBase = statusCard?.dataset.apiBase || "/api/employee";
 const statusPill = document.getElementById("status-pill");
 const statusMessage = document.getElementById("status-message");
 const orderTime = document.getElementById("order-time");
-const notifyButton = document.getElementById("enable-notifications");
 const progressWrapper = document.getElementById("progress-wrapper");
 const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
-const NOTIFY_KEY = "employeeReadyNotify";
-let lastStatus = statusPill?.textContent || "Pending";
 
 const statusMessages = {
   Pending: "Chef has received your order.",
@@ -25,13 +22,6 @@ const updateStatusUi = (order) => {
   statusPill.textContent = status;
   statusPill.className = `status-pill status-${status.toLowerCase()}`;
   statusMessage.textContent = statusMessages[status] || "Status updated.";
-  if (status !== lastStatus && status === "Ready") {
-    if (getNotifyEnabled()) {
-      showReadyNotification();
-      playChime();
-    }
-  }
-  lastStatus = status;
   if (orderTime) {
     const iso = order.created_at_iso || orderTime.dataset.createdIso || order.created_at;
     const parsed = iso ? Date.parse(iso) : NaN;
@@ -70,52 +60,6 @@ const updateStatusUi = (order) => {
   }
 };
 
-const getNotifyEnabled = () => {
-  const stored = localStorage.getItem(NOTIFY_KEY);
-  if (stored === "true") {
-    return true;
-  }
-  if (stored === "false") {
-    return false;
-  }
-  return false;
-};
-
-const setNotifyEnabled = (enabled) => {
-  localStorage.setItem(NOTIFY_KEY, enabled ? "true" : "false");
-};
-
-const showReadyNotification = () => {
-  if (!("Notification" in window)) {
-    return;
-  }
-  if (Notification.permission === "granted") {
-    new Notification("Lunch is ready", {
-      body: "Your order is ready for pickup/delivery.",
-    });
-  }
-};
-
-const playChime = () => {
-  try {
-    const audio = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audio.createOscillator();
-    const gain = audio.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.value = 880;
-    gain.gain.value = 0.06;
-    oscillator.connect(gain);
-    gain.connect(audio.destination);
-    oscillator.start();
-    setTimeout(() => {
-      oscillator.stop();
-      audio.close();
-    }, 140);
-  } catch (error) {
-    // Ignore audio errors.
-  }
-};
-
 const refreshStatus = async () => {
   if (!statusCard) {
     return;
@@ -138,22 +82,3 @@ const refreshStatus = async () => {
 
 refreshStatus();
 setInterval(refreshStatus, 5000);
-
-if (notifyButton) {
-  notifyButton.addEventListener("click", async () => {
-    if (!("Notification" in window)) {
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      setNotifyEnabled(true);
-      notifyButton.textContent = "Notifications enabled";
-      showReadyNotification();
-    } else {
-      setNotifyEnabled(false);
-    }
-  });
-  if (getNotifyEnabled() && Notification.permission === "granted") {
-    notifyButton.textContent = "Notifications enabled";
-  }
-}
