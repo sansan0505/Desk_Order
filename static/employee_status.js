@@ -69,14 +69,14 @@ const playChime = () => {
     const gain = audio.createGain();
     oscillator.type = "sine";
     oscillator.frequency.value = 880;
-    gain.gain.value = 0.06;
+    gain.gain.value = 0.08;
     oscillator.connect(gain);
     gain.connect(audio.destination);
     oscillator.start();
     setTimeout(() => {
       oscillator.stop();
       audio.close();
-    }, 140);
+    }, 150);
   } catch (error) {
     // Ignore audio errors.
   }
@@ -88,7 +88,7 @@ const showLunchNotification = () => {
   }
   if ("Notification" in window && Notification.permission === "granted") {
     new Notification("Lunch is ready", {
-      body: "Please collect your order.",
+      body: "Lunch is ready.",
     });
   }
   playChime();
