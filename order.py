@@ -307,6 +307,7 @@ def place_order(token: str):
         "status": "Pending",
         "prep_minutes": None,
         "prep_started_at": None,
+        "cancelled_at": None,
     }
     ORDERS.append(order)
     NEXT_ORDER_ID += 1
@@ -452,9 +453,39 @@ def employee_mate_orders(token: str):
                     "id": order.get("id"),
                     "employee_name": order.get("employee_name", ""),
                     "order_text": order.get("order_text", ""),
+                    "status": order.get("status", ""),
                 }
             )
     return jsonify(matches)
+
+
+@app.post("/api/employee/<token>/orders/<int:order_id>/cancel")
+def employee_cancel_order(token: str, order_id: int):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip().lower()
+    if not employee_name:
+        return jsonify({"error": "Name required"}), 400
+    order = next((item for item in ORDERS if item["id"] == order_id), None)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+    owner = str(order.get("employee_name", "")).strip().lower()
+    mate = str(order.get("mate_name", "")).strip().lower()
+    if employee_name not in {owner, mate}:
+        return jsonify({"error": "Not allowed"}), 403
+    status = order.get("status", "")
+    if status in {"Ready", "Delivered", "Cancelled"}:
+        return jsonify({"error": "Cannot cancel now"}), 400
+    order["status"] = "Cancelled"
+    order["cancelled_at"] = now_iso()
+    ring = {
+        "id": len(RING_EVENTS) + 1,
+        "employee_name": employee_name or order.get("employee_name", ""),
+        "created_at_iso": now_iso(),
+        "message": "Order cancelled",
+    }
+    RING_EVENTS.append(ring)
+    return jsonify(order)
 
 
 @app.post("/api/employee/<token>/ring")
@@ -480,13 +511,15 @@ def update_order_status(token: str, order_id: int):
         return jsonify({"error": "Not found"}), 404
     payload = request.get_json(silent=True) or {}
     status = str(payload.get("status", "")).strip()
-    allowed = {"Pending", "Preparing", "Ready", "Delivered"}
+    allowed = {"Pending", "Preparing", "Ready", "Delivered", "Cancelled"}
     if status not in allowed:
         return jsonify({"error": "Invalid status"}), 400
 
     order = next((item for item in ORDERS if item["id"] == order_id), None)
     if not order:
         return jsonify({"error": "Order not found"}), 404
+    if order.get("status") == "Cancelled":
+        return jsonify({"error": "Order cancelled"}), 400
 
     order["status"] = status
     if status == "Ready":
@@ -531,6 +564,8 @@ def update_prep_time(token: str, order_id: int):
     order = next((item for item in ORDERS if item["id"] == order_id), None)
     if not order:
         return jsonify({"error": "Order not found"}), 404
+    if order.get("status") == "Cancelled":
+        return jsonify({"error": "Order cancelled"}), 400
 
     order["prep_minutes"] = minutes
     order["prep_started_at"] = now_iso()

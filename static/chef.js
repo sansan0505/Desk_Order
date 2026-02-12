@@ -32,7 +32,14 @@ const renderOrders = (orders) => {
     return;
   }
 
+  const now = Date.now();
   orders.forEach((order) => {
+    if (order.status === "Cancelled") {
+      const cancelledAt = order.cancelled_at ? Date.parse(order.cancelled_at) : NaN;
+      if (Number.isFinite(cancelledAt) && now - cancelledAt > 60000) {
+        return;
+      }
+    }
     const card = document.createElement("div");
     card.className = "card card-hero order-card";
     if (order.id) {
@@ -121,7 +128,7 @@ const renderOrders = (orders) => {
       button.textContent = label;
       button.dataset.status = label;
       button.dataset.orderId = order.id;
-      if (label === statusValue || statusValue === "Delivered") {
+      if (label === statusValue || statusValue === "Delivered" || statusValue === "Cancelled") {
         button.disabled = true;
       }
       actions.appendChild(button);
@@ -295,7 +302,11 @@ const showRingNotification = (ring) => {
   if (!ringNotification) {
     return;
   }
-  ringNotification.textContent = `${ring.employee_name || "Someone"} is calling you.`;
+  if (ring.message === "Order cancelled") {
+    ringNotification.textContent = `${ring.employee_name || "Someone"} cancelled their order.`;
+  } else {
+    ringNotification.textContent = `${ring.employee_name || "Someone"} is calling you.`;
+  }
   ringNotification.classList.remove("hidden");
   clearTimeout(notificationTimer);
   notificationTimer = setTimeout(() => {
