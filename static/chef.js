@@ -82,58 +82,59 @@ const renderOrders = (orders) => {
       card.appendChild(req);
     }
 
-    const prepControls = document.createElement("div");
-    prepControls.className = "prep-controls";
-    const prepLabel = document.createElement("label");
-    prepLabel.textContent = "Prep (min)";
-    prepLabel.htmlFor = `prep-${order.id || "new"}`;
-    const prepInput = document.createElement("input");
-    prepInput.type = "number";
-    prepInput.min = "1";
-    prepInput.max = "240";
-    prepInput.placeholder = "20";
-    prepInput.id = `prep-${order.id || "new"}`;
-    prepInput.value = order.prep_minutes || "";
-    const prepButton = document.createElement("button");
-    prepButton.type = "button";
-    prepButton.textContent = "Start prep";
-    prepButton.dataset.prep = "true";
-    prepButton.dataset.orderId = order.id;
-    if (statusValue === "Delivered") {
-      prepButton.disabled = true;
-    }
-    prepControls.appendChild(prepLabel);
-    prepControls.appendChild(prepInput);
-    prepControls.appendChild(prepButton);
-    if (order.suggested_eta) {
-      const etaChip = document.createElement("span");
-      etaChip.className = "chip";
-      etaChip.textContent = `Suggested: ${order.suggested_eta} min`;
-      const etaButton = document.createElement("button");
-      etaButton.type = "button";
-      etaButton.textContent = "Use ETA";
-      etaButton.dataset.useEta = "true";
-      etaButton.dataset.eta = order.suggested_eta;
-      etaButton.dataset.orderId = order.id;
-      prepControls.appendChild(etaChip);
-      prepControls.appendChild(etaButton);
-    }
-    card.appendChild(prepControls);
-
-    const actions = document.createElement("div");
-    actions.className = "status-actions";
-    ["Preparing", "Ready", "Delivered"].forEach((label) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.dataset.status = label;
-      button.dataset.orderId = order.id;
-      if (label === statusValue || statusValue === "Delivered" || statusValue === "Cancelled") {
-        button.disabled = true;
+    if (!["Delivered", "Cancelled"].includes(statusValue)) {
+      const prepControls = document.createElement("div");
+      prepControls.className = "prep-controls";
+      const prepLabel = document.createElement("label");
+      prepLabel.textContent = "Prep (min)";
+      prepLabel.htmlFor = `prep-${order.id || "new"}`;
+      const prepInput = document.createElement("input");
+      prepInput.type = "number";
+      prepInput.min = "1";
+      prepInput.max = "240";
+      prepInput.placeholder = "20";
+      prepInput.id = `prep-${order.id || "new"}`;
+      prepInput.value = order.prep_minutes || "";
+      const prepButton = document.createElement("button");
+      prepButton.type = "button";
+      prepButton.textContent = "Start prep";
+      prepButton.dataset.prep = "true";
+      prepButton.dataset.orderId = order.id;
+      prepControls.appendChild(prepLabel);
+      prepControls.appendChild(prepInput);
+      prepControls.appendChild(prepButton);
+      if (order.suggested_eta) {
+        const etaChip = document.createElement("span");
+        etaChip.className = "chip";
+        etaChip.textContent = `Suggested: ${order.suggested_eta} min`;
+        const etaButton = document.createElement("button");
+        etaButton.type = "button";
+        etaButton.textContent = "Use ETA";
+        etaButton.dataset.useEta = "true";
+        etaButton.dataset.eta = order.suggested_eta;
+        etaButton.dataset.orderId = order.id;
+        prepControls.appendChild(etaChip);
+        prepControls.appendChild(etaButton);
       }
-      actions.appendChild(button);
-    });
-    card.appendChild(actions);
+      card.appendChild(prepControls);
+    }
+
+    if (!["Delivered", "Cancelled"].includes(statusValue)) {
+      const actions = document.createElement("div");
+      actions.className = "status-actions";
+      ["Preparing", "Ready", "Delivered"].forEach((label) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.dataset.status = label;
+        button.dataset.orderId = order.id;
+        if (label === statusValue || statusValue === "Delivered" || statusValue === "Cancelled") {
+          button.disabled = true;
+        }
+        actions.appendChild(button);
+      });
+      card.appendChild(actions);
+    }
     orderList.appendChild(card);
   });
 };
