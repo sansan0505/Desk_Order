@@ -22,6 +22,7 @@ if not MENU_ASSETS_DIR:
 # In-memory store for demo purposes. Replace with DB in production.
 ORDERS = []
 PRESETS = []
+LUNCH_READY = {"is_ready": False, "updated_at": None}
 MENU = {
     "Snacks": [
         {"name": "Cookies", "image": "/menu-images/cookies.png"},
@@ -308,6 +309,13 @@ def order_detail_api(token: str, order_id: int):
     return jsonify(order)
 
 
+@app.get("/api/employee/<token>/lunch-ready")
+def lunch_ready_status(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(LUNCH_READY)
+
+
 @app.post("/api/chef/<token>/orders/<int:order_id>/status")
 def update_order_status(token: str, order_id: int):
     if not is_chef_token(token):
@@ -328,6 +336,25 @@ def update_order_status(token: str, order_id: int):
     if status == "Delivered":
         order["delivered_at"] = now_iso()
     return jsonify(order)
+
+
+@app.get("/api/chef/<token>/lunch-ready")
+def chef_lunch_ready_status(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(LUNCH_READY)
+
+
+@app.post("/api/chef/<token>/lunch-ready")
+def chef_lunch_ready_update(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    payload = request.get_json(silent=True) or {}
+    ready_value = payload.get("ready")
+    ready = bool(ready_value)
+    LUNCH_READY["is_ready"] = ready
+    LUNCH_READY["updated_at"] = now_iso()
+    return jsonify(LUNCH_READY)
 
 
 @app.post("/api/chef/<token>/orders/<int:order_id>/prep")

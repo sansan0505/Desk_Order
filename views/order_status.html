@@ -7,6 +7,9 @@
       <p>We will keep this updated while the kitchen prepares your meal.</p>
     </div>
   </section>
+  <div id="lunch-ready-banner" class="notice hidden" data-api-base="/api/employee/{{ employee_token }}">
+    Lunch is ready for pickup.
+  </div>
   <div
     class="card order-card{% if order.status == 'Preparing' %} card-hero{% endif %}"
     data-order-id="{{ order.id }}"

@@ -3,6 +3,8 @@ const menuGrid = document.querySelector(".menu-grid");
 const cartList = document.getElementById("cart-list");
 const cartInput = document.getElementById("order_items_json");
 const requirementsField = document.getElementById("requirements");
+const lunchBanner = document.getElementById("lunch-ready-banner");
+const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const cart = new Map();
 
 const renderCart = () => {
@@ -118,6 +120,73 @@ const refreshPresets = async () => {
 
 refreshPresets();
 renderCart();
+
+const playChime = () => {
+  try {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.06;
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start();
+    setTimeout(() => {
+      oscillator.stop();
+      audio.close();
+    }, 140);
+  } catch (error) {
+    // Ignore audio errors.
+  }
+};
+
+const showLunchNotification = () => {
+  if (lunchBanner) {
+    lunchBanner.classList.remove("hidden");
+  }
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Lunch is ready", {
+      body: "Please collect your order.",
+    });
+  }
+  playChime();
+};
+
+const refreshLunchReady = async () => {
+  if (!lunchBanner) {
+    return;
+  }
+  const apiBase = lunchBanner.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/lunch-ready`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    const ready = Boolean(data?.is_ready);
+    const updatedAt = data?.updated_at || "";
+    if (!ready) {
+      lunchBanner.classList.add("hidden");
+      return;
+    }
+    const lastSeen = localStorage.getItem(LUNCH_SEEN_KEY) || "";
+    if (updatedAt && updatedAt !== lastSeen) {
+      localStorage.setItem(LUNCH_SEEN_KEY, updatedAt);
+      showLunchNotification();
+    } else {
+      lunchBanner.classList.remove("hidden");
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+refreshLunchReady();
+setInterval(refreshLunchReady, 10000);
 
 if (menuGrid) {
   menuGrid.addEventListener("click", (event) => {

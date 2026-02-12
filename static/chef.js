@@ -3,7 +3,9 @@ const apiBase = orderList?.dataset.apiBase || "/api/chef";
 const groupList = document.getElementById("group-list");
 const notification = document.getElementById("notification");
 const soundToggle = document.getElementById("sound-toggle");
+const lunchReadyToggle = document.getElementById("lunch-ready-toggle");
 const SOUND_KEY = "chefSoundEnabled";
+const LUNCH_KEY = "lunchReadyState";
 let lastSeenId = null;
 let notificationTimer;
 
@@ -243,6 +245,10 @@ const setSoundEnabled = (enabled) => {
   localStorage.setItem(SOUND_KEY, enabled ? "true" : "false");
 };
 
+const setLunchReadyState = (state) => {
+  localStorage.setItem(LUNCH_KEY, state ? "true" : "false");
+};
+
 const handleNewOrders = (orders) => {
   if (!orders || orders.length === 0) {
     return;
@@ -282,6 +288,44 @@ const refreshOrders = async () => {
 
 refreshOrders();
 setInterval(refreshOrders, 5000);
+
+const refreshLunchReady = async () => {
+  if (!lunchReadyToggle) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/lunch-ready`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    const ready = Boolean(data?.is_ready);
+    lunchReadyToggle.checked = ready;
+    setLunchReadyState(ready);
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+if (lunchReadyToggle) {
+  lunchReadyToggle.addEventListener("change", async () => {
+    const ready = lunchReadyToggle.checked;
+    try {
+      const response = await fetch(`${apiBase}/lunch-ready`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ready }),
+      });
+      if (response.ok) {
+        setLunchReadyState(ready);
+      }
+    } catch (error) {
+      // Ignore transient network errors.
+    }
+  });
+  refreshLunchReady();
+  setInterval(refreshLunchReady, 8000);
+}
 
 if (soundToggle) {
   soundToggle.checked = getSoundEnabled();
