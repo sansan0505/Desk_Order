@@ -103,13 +103,17 @@ const renderOrders = (orders) => {
 
     const actions = document.createElement("div");
     actions.className = "status-actions";
-    ["Preparing", "Ready", "Delivered"].forEach((label) => {
+    [
+      { label: "Preparing", status: "Preparing" },
+      { label: "Lunch ready", status: "Ready" },
+      { label: "Delivered", status: "Delivered" },
+    ].forEach(({ label, status }) => {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = label;
-      button.dataset.status = label;
+      button.dataset.status = status;
       button.dataset.orderId = order.id;
-      if (label === statusValue || statusValue === "Delivered") {
+      if (status === statusValue || statusValue === "Delivered") {
         button.disabled = true;
       }
       actions.appendChild(button);
