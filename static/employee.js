@@ -7,6 +7,8 @@ const lunchBanner = document.getElementById("lunch-ready-banner");
 const mateBanner = document.getElementById("mate-order-banner");
 const ringBanner = document.getElementById("ring-banner");
 const ringButton = document.getElementById("ring-chef");
+const myOrdersList = document.getElementById("my-orders-list");
+const mateOrdersList = document.getElementById("mate-orders-list");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
 const cart = new Map();
@@ -329,6 +331,10 @@ const refreshMateOrders = async () => {
     const data = await response.json();
     if (!Array.isArray(data) || data.length === 0) {
       mateBanner.classList.add("hidden");
+      if (mateOrdersList) {
+        mateOrdersList.classList.add("hidden");
+        mateOrdersList.replaceChildren();
+      }
       return;
     }
     const seenIds = new Set(getSeenMateIds());
@@ -344,6 +350,31 @@ const refreshMateOrders = async () => {
       mateBanner.textContent = `${employee} has ordered ${items} for you.`;
       mateBanner.classList.remove("hidden");
     }
+
+    if (mateOrdersList) {
+      mateOrdersList.replaceChildren();
+      mateOrdersList.classList.remove("hidden");
+      const title = document.createElement("h3");
+      title.textContent = "Orders for you";
+      mateOrdersList.appendChild(title);
+      data.forEach((order) => {
+        const row = document.createElement("div");
+        row.className = "card-header";
+        row.innerHTML = `<strong>${order.order_text || "Order"}</strong><span class="status-pill status-${(order.status || "").toLowerCase()}">${order.status || "Pending"}</span>`;
+        mateOrdersList.appendChild(row);
+        const actions = document.createElement("div");
+        actions.className = "status-actions";
+        if (!["Ready", "Delivered", "Cancelled"].includes(order.status)) {
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "notify-button cancel-order-btn";
+          cancel.dataset.orderId = order.id;
+          cancel.textContent = "Cancel order";
+          actions.appendChild(cancel);
+          mateOrdersList.appendChild(actions);
+        }
+      });
+    }
   } catch (error) {
     // Ignore transient network errors.
   }
@@ -351,6 +382,62 @@ const refreshMateOrders = async () => {
 
 refreshMateOrders();
 setInterval(refreshMateOrders, 10000);
+
+const renderOrdersList = (container, titleText, orders) => {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  container.classList.remove("hidden");
+  const title = document.createElement("h3");
+  title.textContent = titleText;
+  container.appendChild(title);
+  orders.forEach((order) => {
+    const row = document.createElement("div");
+    row.className = "card-header";
+    row.innerHTML = `<strong>${order.order_text || "Order"}</strong><span class="status-pill status-${(order.status || "").toLowerCase()}">${order.status || "Pending"}</span>`;
+    container.appendChild(row);
+    if (!["Ready", "Delivered", "Cancelled"].includes(order.status)) {
+      const actions = document.createElement("div");
+      actions.className = "status-actions";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "notify-button cancel-order-btn";
+      cancel.dataset.orderId = order.id;
+      cancel.textContent = "Cancel order";
+      actions.appendChild(cancel);
+      container.appendChild(actions);
+    }
+  });
+};
+
+const refreshMyOrders = async () => {
+  if (!myOrdersList) {
+    return;
+  }
+  const apiBase = mateBanner?.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/my-orders`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      myOrdersList.classList.add("hidden");
+      myOrdersList.replaceChildren();
+      return;
+    }
+    renderOrdersList(myOrdersList, "Your orders", data);
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+refreshMyOrders();
+setInterval(refreshMyOrders, 10000);
 
 if (ringButton) {
   ringButton.addEventListener("click", async () => {
@@ -378,6 +465,34 @@ if (ringButton) {
     }
   });
 }
+
+document.addEventListener("click", async (event) => {
+  const target = event.target;
+  const button = target.closest(".cancel-order-btn");
+  if (!button) {
+    return;
+  }
+  const orderId = button.dataset.orderId;
+  if (!orderId) {
+    return;
+  }
+  const apiBase = mateBanner?.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/orders/${orderId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.ok) {
+      refreshMateOrders();
+      refreshMyOrders();
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+});
 
 if (menuGrid) {
   menuGrid.addEventListener("click", (event) => {

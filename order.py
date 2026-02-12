@@ -459,6 +459,28 @@ def employee_mate_orders(token: str):
     return jsonify(matches)
 
 
+@app.get("/api/employee/<token>/my-orders")
+def employee_my_orders(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip()
+    if not employee_name:
+        return jsonify([])
+    matches = []
+    for order in ORDERS:
+        owner = str(order.get("employee_name", "")).strip()
+        if owner.lower() == employee_name.lower():
+            matches.append(
+                {
+                    "id": order.get("id"),
+                    "order_text": order.get("order_text", ""),
+                    "status": order.get("status", ""),
+                }
+            )
+    matches.sort(key=lambda item: item.get("id", 0), reverse=True)
+    return jsonify(matches)
+
+
 @app.post("/api/employee/<token>/orders/<int:order_id>/cancel")
 def employee_cancel_order(token: str, order_id: int):
     if not is_employee_token(token):
