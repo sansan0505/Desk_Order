@@ -23,6 +23,8 @@ if not MENU_ASSETS_DIR:
 ORDERS = []
 PRESETS = []
 LUNCH_READY = {"is_ready": False, "updated_at": None}
+RING_EVENTS = []
+RING_EVENTS = []
 MENU = {
     "Snacks": [
         {"name": "Cookies", "image": "/menu-images/cookies.png"},
@@ -124,6 +126,26 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+def prune_rings():
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
+    kept = []
+    for ring in RING_EVENTS:
+        created_at = ring.get("created_at_iso")
+        if created_at:
+            try:
+                ring_time = datetime.fromisoformat(created_at)
+            except ValueError:
+                ring_time = datetime.now(timezone.utc)
+        else:
+            ring_time = datetime.now(timezone.utc)
+        if ring_time.tzinfo is None:
+            ring_time = ring_time.replace(tzinfo=timezone.utc)
+        if ring_time >= cutoff:
+            kept.append(ring)
+    RING_EVENTS.clear()
+    RING_EVENTS.extend(kept)
+
+
 def menu_items_with_availability():
     items = []
     for category, entries in MENU.items():
@@ -140,6 +162,26 @@ def menu_items_with_availability():
                 }
             )
     return items
+
+
+def prune_rings():
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
+    kept = []
+    for ring in RING_EVENTS:
+        created_iso = ring.get("created_at_iso")
+        if created_iso:
+            try:
+                ring_time = datetime.fromisoformat(created_iso)
+            except ValueError:
+                ring_time = datetime.now(timezone.utc)
+        else:
+            ring_time = datetime.now(timezone.utc)
+        if ring_time.tzinfo is None:
+            ring_time = ring_time.replace(tzinfo=timezone.utc)
+        if ring_time >= cutoff:
+            kept.append(ring)
+    RING_EVENTS.clear()
+    RING_EVENTS.extend(kept)
 
 NEXT_ORDER_ID = 1
 NEXT_PRESET_ID = 1
@@ -368,6 +410,14 @@ def chef_menu_availability_update(token: str):
     return jsonify({"name": name, "available": MENU_AVAILABILITY[key]})
 
 
+@app.get("/api/chef/<token>/rings")
+def chef_ring_events(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    prune_rings()
+    return jsonify(RING_EVENTS[-20:])
+
+
 @app.get("/api/employee/<token>/orders/<int:order_id>")
 def order_detail_api(token: str, order_id: int):
     if not is_employee_token(token):
@@ -405,6 +455,23 @@ def employee_mate_orders(token: str):
                 }
             )
     return jsonify(matches)
+
+
+@app.post("/api/employee/<token>/ring")
+def employee_ring(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip()
+    if not employee_name:
+        return jsonify({"error": "Name required"}), 400
+    prune_rings()
+    ring = {
+        "id": len(RING_EVENTS) + 1,
+        "employee_name": employee_name,
+        "created_at_iso": now_iso(),
+    }
+    RING_EVENTS.append(ring)
+    return jsonify(ring), 201
 
 
 @app.post("/api/chef/<token>/orders/<int:order_id>/status")

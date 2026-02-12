@@ -3,11 +3,13 @@ const apiBase = orderList?.dataset.apiBase || "/api/chef";
 const groupList = document.getElementById("group-list");
 const groupedOrdersCard = document.getElementById("grouped-orders-card");
 const notification = document.getElementById("notification");
+const ringNotification = document.getElementById("ring-notification");
 const soundToggle = document.getElementById("sound-toggle");
 const lunchReadyToggle = document.getElementById("lunch-ready-toggle");
 const chefMenuGrid = document.getElementById("chef-menu-grid");
 const SOUND_KEY = "chefSoundEnabled";
 const LUNCH_KEY = "lunchReadyState";
+const RING_SEEN_KEY = "chefRingSeenIds";
 let lastSeenId = null;
 let notificationTimer;
 
@@ -289,6 +291,18 @@ const showNotification = () => {
   }, 4000);
 };
 
+const showRingNotification = (ring) => {
+  if (!ringNotification) {
+    return;
+  }
+  ringNotification.textContent = `${ring.employee_name || "Someone"} is calling you.`;
+  ringNotification.classList.remove("hidden");
+  clearTimeout(notificationTimer);
+  notificationTimer = setTimeout(() => {
+    ringNotification.classList.add("hidden");
+  }, 5000);
+};
+
 const playChime = () => {
   try {
     const audio = new (window.AudioContext || window.webkitAudioContext)();
@@ -456,6 +470,46 @@ if (chefMenuGrid) {
   refreshChefMenu();
   setInterval(refreshChefMenu, 5000);
 }
+
+const getSeenRingIds = () => {
+  try {
+    const raw = localStorage.getItem(RING_SEEN_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const setSeenRingIds = (ids) => {
+  localStorage.setItem(RING_SEEN_KEY, JSON.stringify(ids));
+};
+
+const refreshRings = async () => {
+  try {
+    const response = await fetch(`${apiBase}/rings`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      return;
+    }
+    const seenIds = new Set(getSeenRingIds());
+    const newest = data.find((item) => !seenIds.has(item.id));
+    if (newest) {
+      seenIds.add(newest.id);
+      setSeenRingIds(Array.from(seenIds));
+      showRingNotification(newest);
+      if (getSoundEnabled()) {
+        playChime();
+      }
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+setInterval(refreshRings, 5000);
 
 if (soundToggle) {
   soundToggle.checked = getSoundEnabled();

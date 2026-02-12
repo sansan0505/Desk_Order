@@ -11,6 +11,7 @@
     Lunch is ready.
   </div>
   <div id="mate-order-banner" class="notice hidden" data-api-base="/api/employee/{{ employee_token }}"></div>
+  <div id="ring-banner" class="notice hidden"></div>
   <div
     class="card order-card{% if order.status == 'Preparing' %} card-hero{% endif %}"
     data-order-id="{{ order.id }}"
@@ -30,6 +31,7 @@
     </div>
     <p class="muted" id="progress-text"></p>
     <p class="muted" id="status-message">Status updates appear here automatically.</p>
+    <button type="button" class="notify-button" id="ring-chef">Ring Chef</button>
     <a href="{{ url_for('employee_order', token=employee_token) }}">Place another order</a>
   </div>
 

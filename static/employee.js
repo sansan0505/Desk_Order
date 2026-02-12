@@ -5,6 +5,8 @@ const cartInput = document.getElementById("order_items_json");
 const requirementsField = document.getElementById("requirements");
 const lunchBanner = document.getElementById("lunch-ready-banner");
 const mateBanner = document.getElementById("mate-order-banner");
+const ringBanner = document.getElementById("ring-banner");
+const ringButton = document.getElementById("ring-chef");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
 const cart = new Map();
@@ -349,6 +351,33 @@ const refreshMateOrders = async () => {
 
 refreshMateOrders();
 setInterval(refreshMateOrders, 10000);
+
+if (ringButton) {
+  ringButton.addEventListener("click", async () => {
+    if (!lunchBanner) {
+      return;
+    }
+    const apiBase = lunchBanner.dataset.apiBase;
+    if (!apiBase) {
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBase}/ring`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) {
+        if (ringBanner) {
+          ringBanner.textContent = "Chef has been notified.";
+          ringBanner.classList.remove("hidden");
+        }
+        playChime();
+      }
+    } catch (error) {
+      // Ignore transient network errors.
+    }
+  });
+}
 
 if (menuGrid) {
   menuGrid.addEventListener("click", (event) => {

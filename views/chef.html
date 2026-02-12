@@ -10,6 +10,7 @@
   <div id="notification" class="notice hidden">
     New order received.
   </div>
+  <div id="ring-notification" class="notice hidden"></div>
   <div id="order-list" data-api-base="/api/chef/{{ chef_token }}" data-suggested-eta="{{ suggested_eta or '' }}">
     {% if orders %}
       {% for order in orders %}
