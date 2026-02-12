@@ -46,12 +46,26 @@
         background: var(--bg);
         color: var(--text);
         background-image:
+          repeating-radial-gradient(
+            circle at 20% 30%,
+            rgba(125, 249, 255, 0.08) 0,
+            rgba(125, 249, 255, 0.08) 2px,
+            transparent 2px,
+            transparent 14px
+          ),
+          repeating-radial-gradient(
+            circle at 80% 70%,
+            rgba(255, 79, 216, 0.08) 0,
+            rgba(255, 79, 216, 0.08) 2px,
+            transparent 2px,
+            transparent 16px
+          ),
           radial-gradient(circle at 15% 20%, rgba(125, 249, 255, 0.18), transparent 35%),
           radial-gradient(circle at 85% 10%, rgba(255, 79, 216, 0.22), transparent 35%),
           radial-gradient(circle at 20% 80%, rgba(155, 92, 255, 0.22), transparent 35%),
           linear-gradient(135deg, #0a0b16 0%, #11162b 40%, #0a0b16 100%);
-        background-repeat: no-repeat;
-        background-size: cover;
+        background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+        background-size: 320px 320px, 360px 360px, cover, cover, cover, cover;
         background-attachment: fixed;
         font-size: 20px;
         font-weight: 700;
