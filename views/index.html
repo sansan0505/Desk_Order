@@ -12,6 +12,7 @@
   </div>
   <div id="mate-order-banner" class="notice hidden" data-api-base="/api/employee/{{ employee_token }}"></div>
   <div id="ring-banner" class="notice hidden"></div>
+  <div id="lunch-checkin-banner" class="notice hidden"></div>
   <div id="my-orders-list" class="card order-card hidden"></div>
   <div id="mate-orders-list" class="card order-card hidden"></div>
   <div class="card card-hero">
@@ -25,6 +26,11 @@
       Signed in as <strong>{{ employee_name }}</strong>.
       <a href="{{ url_for('employee_logout', token=employee_token) }}">Change name</a>
     </p>
+    <label class="menu-title">Lunch check-in</label>
+    <label class="toggle-row">
+      <span>I took lunch today</span>
+      <input id="lunch-checkin" type="checkbox" data-api-base="/api/employee/{{ employee_token }}" />
+    </label>
     <div id="preset-list" class="preset-list" data-api-base="/api/employee/{{ employee_token }}"></div>
     <form class="order-form" method="post" enctype="multipart/form-data" action="{{ url_for('place_order', token=employee_token) }}">
       <label class="menu-title">Menu</label>

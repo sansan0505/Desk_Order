@@ -9,6 +9,8 @@ const ringBanner = document.getElementById("ring-banner");
 const ringButton = document.getElementById("ring-chef");
 const myOrdersList = document.getElementById("my-orders-list");
 const mateOrdersList = document.getElementById("mate-orders-list");
+const lunchCheckin = document.getElementById("lunch-checkin");
+const lunchCheckinBanner = document.getElementById("lunch-checkin-banner");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
 const cart = new Map();
@@ -615,6 +617,52 @@ document.addEventListener("click", async (event) => {
     // Ignore transient network errors.
   }
 });
+
+const refreshLunchCheckin = async () => {
+  if (!lunchCheckin) {
+    return;
+  }
+  const apiBase = lunchCheckin.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/lunch-checkin`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    lunchCheckin.checked = Boolean(data?.checked);
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+if (lunchCheckin) {
+  lunchCheckin.addEventListener("change", async () => {
+    const apiBase = lunchCheckin.dataset.apiBase;
+    if (!apiBase) {
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBase}/lunch-checkin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ took: lunchCheckin.checked }),
+      });
+      if (response.ok && lunchCheckinBanner) {
+        lunchCheckinBanner.textContent = lunchCheckin.checked
+          ? "Lunch marked as taken."
+          : "Lunch unmarked.";
+        lunchCheckinBanner.classList.remove("hidden");
+        setTimeout(() => lunchCheckinBanner.classList.add("hidden"), 3000);
+      }
+    } catch (error) {
+      // Ignore transient network errors.
+    }
+  });
+  refreshLunchCheckin();
+}
 
 if (menuGrid) {
   menuGrid.addEventListener("click", (event) => {

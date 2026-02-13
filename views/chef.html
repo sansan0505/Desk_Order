@@ -11,6 +11,7 @@
     New order received.
   </div>
   <div id="ring-notification" class="notice hidden"></div>
+  <div id="lunch-prediction" class="notice hidden"></div>
   <div id="order-list" data-api-base="/api/chef/{{ chef_token }}" data-suggested-eta="{{ suggested_eta or '' }}">
     {% if orders %}
       {% for order in orders %}
@@ -75,6 +76,11 @@
       Lunch is ready
     </label>
     <span class="muted">Notify everyone instantly.</span>
+  </div>
+  <div class="card card-hero">
+    <h2>Lunch check-ins</h2>
+    <p class="muted">Employees who marked lunch today.</p>
+    <div id="lunch-checkins" class="group-list" data-api-base="/api/chef/{{ chef_token }}"></div>
   </div>
   <div class="card card-hero">
     <label class="menu-title">Menu (availability)</label>

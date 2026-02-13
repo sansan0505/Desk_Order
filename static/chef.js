@@ -4,12 +4,15 @@ const groupList = document.getElementById("group-list");
 const groupedOrdersCard = document.getElementById("grouped-orders-card");
 const notification = document.getElementById("notification");
 const ringNotification = document.getElementById("ring-notification");
+const lunchPrediction = document.getElementById("lunch-prediction");
 const soundToggle = document.getElementById("sound-toggle");
 const lunchReadyToggle = document.getElementById("lunch-ready-toggle");
 const chefMenuGrid = document.getElementById("chef-menu-grid");
+const lunchCheckins = document.getElementById("lunch-checkins");
 const SOUND_KEY = "chefSoundEnabled";
 const LUNCH_KEY = "lunchReadyState";
 const RING_SEEN_KEY = "chefRingSeenIds";
+const PRED_SEEN_KEY = "chefLunchPredictionSeen";
 let lastSeenId = null;
 let notificationTimer;
 
@@ -528,6 +531,85 @@ const refreshRings = async () => {
 };
 
 setInterval(refreshRings, 5000);
+
+const refreshLunchCheckins = async () => {
+  if (!lunchCheckins) {
+    return;
+  }
+  const apiBase = lunchCheckins.dataset.apiBase;
+  if (!apiBase) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/lunch-checkins`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    lunchCheckins.replaceChildren();
+    const names = Array.isArray(data?.names) ? data.names : [];
+    const count = Number(data?.count || names.length);
+    if (names.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No check-ins yet.";
+      lunchCheckins.appendChild(empty);
+      return;
+    }
+    const summary = document.createElement("div");
+    summary.className = "chip";
+    summary.textContent = `${count} checked in`;
+    lunchCheckins.appendChild(summary);
+    names.forEach((name) => {
+      const item = document.createElement("div");
+      item.className = "group-item";
+      item.textContent = name;
+      lunchCheckins.appendChild(item);
+    });
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+const refreshLunchPrediction = async () => {
+  if (!lunchPrediction) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/lunch-prediction`, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    const predicted = data?.predicted;
+    const hour = Number(data?.hour);
+    const date = data?.date || "";
+    if (!predicted || !date) {
+      lunchPrediction.classList.add("hidden");
+      return;
+    }
+    if (hour < 10) {
+      lunchPrediction.classList.add("hidden");
+      return;
+    }
+    lunchPrediction.textContent = `(${predicted}) number of people is expected for lunch today`;
+    lunchPrediction.classList.remove("hidden");
+    const lastSeen = localStorage.getItem(PRED_SEEN_KEY);
+    if (lastSeen !== date) {
+      localStorage.setItem(PRED_SEEN_KEY, date);
+      if (getSoundEnabled()) {
+        playChime();
+      }
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+};
+
+refreshLunchCheckins();
+setInterval(refreshLunchCheckins, 20000);
+refreshLunchPrediction();
+setInterval(refreshLunchPrediction, 3600000);
 
 if (soundToggle) {
   soundToggle.checked = getSoundEnabled();

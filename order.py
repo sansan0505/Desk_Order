@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 import os
 
 import json
+import sqlite3
+from zoneinfo import ZoneInfo
 from uuid import uuid4
 
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session, url_for
@@ -14,6 +16,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MENU_ASSETS_DIR = os.path.join(BASE_DIR, "static", "menu")
 LEGACY_MENU_ASSETS_DIR = r"C:\Users\Admin\.cursor\projects\c-Users-Admin-OneDrive-Documents-Innov\assets"
 VOICE_UPLOAD_DIR = os.path.join(BASE_DIR, "static", "voice")
+DB_PATH = os.path.join(BASE_DIR, "data.db")
+IST_TZ = ZoneInfo("Asia/Kolkata")
 MENU_ASSETS_DIR = os.getenv("MENU_ASSETS_DIR")
 if not MENU_ASSETS_DIR:
     MENU_ASSETS_DIR = (
@@ -80,6 +84,7 @@ def init_menu_availability():
 
 
 init_menu_availability()
+init_db()
 
 def prune_orders():
     cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
@@ -154,6 +159,43 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+def now_ist():
+    return datetime.now(IST_TZ)
+
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = get_db()
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS lunch_checkins (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              employee_name TEXT NOT NULL,
+              checked_at_iso TEXT NOT NULL,
+              checked_date TEXT NOT NULL,
+              UNIQUE(employee_name, checked_date)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta (
+              key TEXT PRIMARY KEY,
+              value TEXT
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def prune_rings():
     cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
     kept = []
@@ -210,6 +252,91 @@ def prune_rings():
             kept.append(ring)
     RING_EVENTS.clear()
     RING_EVENTS.extend(kept)
+
+
+def get_lunch_checkins_for_date(date_str: str):
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT employee_name, checked_at_iso FROM lunch_checkins WHERE checked_date = ? ORDER BY checked_at_iso",
+            (date_str,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def set_lunch_checkin(employee_name: str, date_str: str, checked_at_iso: str):
+    conn = get_db()
+    try:
+        conn.execute(
+            """
+            INSERT INTO lunch_checkins (employee_name, checked_at_iso, checked_date)
+            VALUES (?, ?, ?)
+            ON CONFLICT(employee_name, checked_date) DO UPDATE SET
+              checked_at_iso = excluded.checked_at_iso
+            """,
+            (employee_name, checked_at_iso, date_str),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_lunch_checkin(employee_name: str, date_str: str):
+    conn = get_db()
+    try:
+        conn.execute(
+            "DELETE FROM lunch_checkins WHERE employee_name = ? AND checked_date = ?",
+            (employee_name, date_str),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_lunch_prediction(date_obj: datetime):
+    conn = get_db()
+    try:
+        first_row = conn.execute(
+            "SELECT MIN(checked_date) as first_date FROM lunch_checkins"
+        ).fetchone()
+        first_date = first_row["first_date"] if first_row else None
+        if not first_date:
+            return None
+        try:
+            first_dt = datetime.fromisoformat(first_date).date()
+        except ValueError:
+            return None
+        if (date_obj.date() - first_dt).days < 14:
+            return None
+        start = first_dt.isoformat()
+        end = date_obj.date().isoformat()
+        rows = conn.execute(
+            """
+            SELECT checked_date, COUNT(*) as count
+            FROM lunch_checkins
+            WHERE checked_date >= ? AND checked_date < ?
+            GROUP BY checked_date
+            """,
+            (start, end),
+        ).fetchall()
+    finally:
+        conn.close()
+    if not rows:
+        return None
+    weekday = date_obj.weekday()
+    weekday_counts = []
+    for row in rows:
+        try:
+            day = datetime.fromisoformat(row["checked_date"]).date()
+        except ValueError:
+            continue
+        if day.weekday() == weekday:
+            weekday_counts.append(row["count"])
+    if not weekday_counts:
+        return None
+    return int(round(sum(weekday_counts) / len(weekday_counts)))
 
 NEXT_ORDER_ID = 1
 NEXT_PRESET_ID = 1
@@ -430,6 +557,38 @@ def employee_menu_api(token: str):
     return jsonify(items)
 
 
+@app.get("/api/employee/<token>/lunch-checkin")
+def employee_lunch_checkin_status(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip()
+    if not employee_name:
+        return jsonify({"checked": False})
+    today = now_ist().date().isoformat()
+    rows = get_lunch_checkins_for_date(today)
+    checked = any(
+        row["employee_name"].strip().lower() == employee_name.lower() for row in rows
+    )
+    return jsonify({"checked": checked})
+
+
+@app.post("/api/employee/<token>/lunch-checkin")
+def employee_lunch_checkin(token: str):
+    if not is_employee_token(token):
+        return jsonify({"error": "Not found"}), 404
+    employee_name = session.get("employee_name", "").strip()
+    if not employee_name:
+        return jsonify({"error": "Name required"}), 400
+    payload = request.get_json(silent=True) or {}
+    took = bool(payload.get("took"))
+    today = now_ist().date().isoformat()
+    if took:
+        set_lunch_checkin(employee_name, today, now_iso())
+    else:
+        delete_lunch_checkin(employee_name, today)
+    return jsonify({"checked": took})
+
+
 @app.get("/api/chef/<token>/menu")
 def chef_menu_api(token: str):
     if not is_chef_token(token):
@@ -451,6 +610,31 @@ def chef_menu_availability_update(token: str):
         return jsonify({"error": "Invalid item"}), 400
     MENU_AVAILABILITY[key] = bool(available)
     return jsonify({"name": name, "available": MENU_AVAILABILITY[key]})
+
+
+@app.get("/api/chef/<token>/lunch-checkins")
+def chef_lunch_checkins(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    today = now_ist().date().isoformat()
+    rows = get_lunch_checkins_for_date(today)
+    names = [row["employee_name"] for row in rows]
+    return jsonify({"date": today, "count": len(names), "names": names})
+
+
+@app.get("/api/chef/<token>/lunch-prediction")
+def chef_lunch_prediction(token: str):
+    if not is_chef_token(token):
+        return jsonify({"error": "Not found"}), 404
+    now = now_ist()
+    predicted = get_lunch_prediction(now)
+    return jsonify(
+        {
+            "predicted": predicted,
+            "date": now.date().isoformat(),
+            "hour": now.hour,
+        }
+    )
 
 
 @app.get("/api/chef/<token>/rings")
