@@ -53,8 +53,17 @@
         placeholder="Example: No onions, allergy to peanuts"
       >{{ requirements or '' }}</textarea>
 
-      <label for="voice_message">Voice message (optional)</label>
-      <input id="voice_message" name="voice_message" type="file" accept="audio/*" />
+      <label>Voice message (optional)</label>
+      <div class="voice-controls">
+        <button type="button" class="notify-button" id="voice-start">Start recording</button>
+        <button type="button" class="notify-button" id="voice-stop" disabled>Stop</button>
+        <button type="button" class="notify-button" id="voice-discard" disabled>Discard</button>
+        <div id="voice-wave" class="voice-wave hidden" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <audio id="voice-preview" controls class="hidden"></audio>
+      </div>
+      <input id="voice_message" name="voice_message" type="file" accept="audio/*" class="hidden" />
 
       <button type="button" class="notify-button" id="ring-chef">Ring Chef</button>
       <button type="submit">Place Order</button>

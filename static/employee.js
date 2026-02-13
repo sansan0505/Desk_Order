@@ -12,6 +12,14 @@ const mateOrdersList = document.getElementById("mate-orders-list");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
 const cart = new Map();
+const voiceStart = document.getElementById("voice-start");
+const voiceStop = document.getElementById("voice-stop");
+const voiceDiscard = document.getElementById("voice-discard");
+const voiceWave = document.getElementById("voice-wave");
+const voicePreview = document.getElementById("voice-preview");
+const voiceInput = document.getElementById("voice_message");
+let mediaRecorder;
+let recordedChunks = [];
 
 const renderCart = () => {
   if (!cartList) {
@@ -465,6 +473,90 @@ if (ringButton) {
     }
   });
 }
+
+const setupVoiceRecording = () => {
+  if (!voiceStart || !voiceStop || !voiceInput) {
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    voiceStart.disabled = true;
+    return;
+  }
+
+  const resetRecording = () => {
+    recordedChunks = [];
+    if (voicePreview) {
+      voicePreview.src = "";
+      voicePreview.classList.add("hidden");
+    }
+    if (voiceWave) {
+      voiceWave.classList.add("hidden");
+    }
+    if (voiceDiscard) {
+      voiceDiscard.disabled = true;
+    }
+    if (voiceInput) {
+      voiceInput.value = "";
+    }
+  };
+
+  voiceStart.addEventListener("click", async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      resetRecording();
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "audio/webm" });
+        const file = new File([blob], "voice_message.webm", { type: blob.type });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        voiceInput.files = dataTransfer.files;
+        if (voicePreview) {
+          voicePreview.src = URL.createObjectURL(blob);
+          voicePreview.classList.remove("hidden");
+        }
+        if (voiceWave) {
+          voiceWave.classList.add("hidden");
+        }
+        if (voiceDiscard) {
+          voiceDiscard.disabled = false;
+        }
+        stream.getTracks().forEach((track) => track.stop());
+        voiceStart.disabled = false;
+        voiceStop.disabled = true;
+      };
+      mediaRecorder.start();
+      voiceStart.disabled = true;
+      voiceStop.disabled = false;
+      if (voiceWave) {
+        voiceWave.classList.remove("hidden");
+      }
+    } catch (error) {
+      // Ignore permission errors.
+    }
+  });
+
+  voiceStop.addEventListener("click", () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
+  });
+
+  if (voiceDiscard) {
+    voiceDiscard.addEventListener("click", () => {
+      resetRecording();
+      voiceStart.disabled = false;
+      voiceStop.disabled = true;
+    });
+  }
+};
+
+setupVoiceRecording();
 
 document.addEventListener("click", async (event) => {
   const target = event.target;
