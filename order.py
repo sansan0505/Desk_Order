@@ -590,6 +590,15 @@ def update_order_status(token: str, order_id: int):
         order["ready_at"] = now_iso()
     if status == "Delivered":
         order["delivered_at"] = now_iso()
+        voice_filename = order.get("voice_filename", "")
+        if voice_filename:
+            voice_path = os.path.join(VOICE_UPLOAD_DIR, voice_filename)
+            try:
+                if os.path.isfile(voice_path):
+                    os.remove(voice_path)
+            except OSError:
+                pass
+            order["voice_filename"] = ""
     return jsonify(order)
 
 
