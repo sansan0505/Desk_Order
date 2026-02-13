@@ -729,7 +729,7 @@ def employee_cancel_order(token: str, order_id: int):
     order["status"] = "Cancelled"
     order["cancelled_at"] = now_iso()
     ring = {
-        "id": len(RING_EVENTS) + 1,
+        "id": uuid4().hex,
         "employee_name": employee_name or order.get("employee_name", ""),
         "created_at_iso": now_iso(),
         "message": "Order cancelled",
@@ -747,7 +747,7 @@ def employee_ring(token: str):
         return jsonify({"error": "Name required"}), 400
     prune_rings()
     ring = {
-        "id": len(RING_EVENTS) + 1,
+        "id": uuid4().hex,
         "employee_name": employee_name,
         "created_at_iso": now_iso(),
     }

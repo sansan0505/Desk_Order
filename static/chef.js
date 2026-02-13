@@ -530,6 +530,7 @@ const refreshRings = async () => {
   }
 };
 
+refreshRings();
 setInterval(refreshRings, 5000);
 
 const refreshLunchCheckins = async () => {
