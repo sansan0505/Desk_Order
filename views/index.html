@@ -26,11 +26,13 @@
       Signed in as <strong>{{ employee_name }}</strong>.
       <a href="{{ url_for('employee_logout', token=employee_token) }}">Change name</a>
     </p>
-    <label class="menu-title">Lunch check-in</label>
-    <label class="toggle-row">
-      <span>I took lunch today</span>
-      <input id="lunch-checkin" type="checkbox" data-api-base="/api/employee/{{ employee_token }}" />
-    </label>
+    <div id="lunch-checkin-wrapper" class="hidden">
+      <label class="menu-title">Lunch check-in</label>
+      <label class="toggle-row">
+        <span>I took lunch today</span>
+        <input id="lunch-checkin" type="checkbox" data-api-base="/api/employee/{{ employee_token }}" />
+      </label>
+    </div>
     <div id="preset-list" class="preset-list" data-api-base="/api/employee/{{ employee_token }}"></div>
     <form class="order-form" method="post" enctype="multipart/form-data" action="{{ url_for('place_order', token=employee_token) }}">
       <label class="menu-title">Menu</label>

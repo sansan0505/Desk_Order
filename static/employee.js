@@ -10,6 +10,7 @@ const ringButton = document.getElementById("ring-chef");
 const myOrdersList = document.getElementById("my-orders-list");
 const mateOrdersList = document.getElementById("mate-orders-list");
 const lunchCheckin = document.getElementById("lunch-checkin");
+const lunchCheckinWrapper = document.getElementById("lunch-checkin-wrapper");
 const lunchCheckinBanner = document.getElementById("lunch-checkin-banner");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
@@ -297,7 +298,13 @@ const refreshLunchReady = async () => {
     const updatedAt = data?.updated_at || "";
     if (!ready) {
       lunchBanner.classList.add("hidden");
+      if (lunchCheckinWrapper) {
+        lunchCheckinWrapper.classList.add("hidden");
+      }
       return;
+    }
+    if (lunchCheckinWrapper) {
+      lunchCheckinWrapper.classList.remove("hidden");
     }
     const lastSeen = localStorage.getItem(LUNCH_SEEN_KEY) || "";
     if (updatedAt && updatedAt !== lastSeen) {
