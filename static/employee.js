@@ -18,8 +18,10 @@ const voiceDiscard = document.getElementById("voice-discard");
 const voiceWave = document.getElementById("voice-wave");
 const voicePreview = document.getElementById("voice-preview");
 const voiceInput = document.getElementById("voice_message");
+const orderForm = document.querySelector(".order-form");
 let mediaRecorder;
 let recordedChunks = [];
+let recordedBlob = null;
 
 const renderCart = () => {
   if (!cartList) {
@@ -485,6 +487,7 @@ const setupVoiceRecording = () => {
 
   const resetRecording = () => {
     recordedChunks = [];
+    recordedBlob = null;
     if (voicePreview) {
       voicePreview.src = "";
       voicePreview.classList.add("hidden");
@@ -512,10 +515,13 @@ const setupVoiceRecording = () => {
       };
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: "audio/webm" });
+        recordedBlob = blob;
         const file = new File([blob], "voice_message.webm", { type: blob.type });
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
-        voiceInput.files = dataTransfer.files;
+        if (voiceInput) {
+          voiceInput.files = dataTransfer.files;
+        }
         if (voicePreview) {
           voicePreview.src = URL.createObjectURL(blob);
           voicePreview.classList.remove("hidden");
@@ -557,6 +563,30 @@ const setupVoiceRecording = () => {
 };
 
 setupVoiceRecording();
+
+if (orderForm) {
+  orderForm.addEventListener("submit", async (event) => {
+    if (!recordedBlob) {
+      return;
+    }
+    event.preventDefault();
+    const formData = new FormData(orderForm);
+    if (!formData.get("voice_message")) {
+      formData.set("voice_message", recordedBlob, "voice_message.webm");
+    }
+    try {
+      const response = await fetch(orderForm.action, {
+        method: "POST",
+        body: formData,
+      });
+      if (response.ok) {
+        window.location.href = response.url;
+      }
+    } catch (error) {
+      // Ignore transient network errors.
+    }
+  });
+}
 
 document.addEventListener("click", async (event) => {
   const target = event.target;
