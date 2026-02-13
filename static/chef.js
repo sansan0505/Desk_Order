@@ -74,6 +74,12 @@ const renderOrders = (orders) => {
       mate.textContent = `For: ${order.mate_name}`;
       card.appendChild(mate);
     }
+    if (order.voice_filename) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.src = `/static/voice/${order.voice_filename}`;
+      card.appendChild(audio);
+    }
     card.appendChild(text);
     if (order.requirements) {
       const req = document.createElement("p");
