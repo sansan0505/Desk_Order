@@ -84,7 +84,6 @@ def init_menu_availability():
 
 
 init_menu_availability()
-init_db()
 
 def prune_orders():
     cutoff = datetime.now(timezone.utc) - timedelta(hours=12)
@@ -194,6 +193,9 @@ def init_db():
         conn.commit()
     finally:
         conn.close()
+
+
+init_db()
 
 
 def prune_rings():
