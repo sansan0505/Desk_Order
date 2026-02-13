@@ -23,6 +23,9 @@
           {% if order.mate_name %}
             <p class="muted"><strong>For:</strong> {{ order.mate_name }}</p>
           {% endif %}
+          {% if order.voice_filename %}
+            <audio controls src="{{ url_for('static', filename='voice/' ~ order.voice_filename) }}"></audio>
+          {% endif %}
           <p>{{ order.order_text }}</p>
           {% if order.requirements %}
             <p class="muted"><strong>Requirements:</strong> {{ order.requirements }}</p>

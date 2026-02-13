@@ -53,6 +53,9 @@
         placeholder="Example: No onions, allergy to peanuts"
       >{{ requirements or '' }}</textarea>
 
+      <label for="voice_message">Voice message (optional)</label>
+      <input id="voice_message" name="voice_message" type="file" accept="audio/*" />
+
       <button type="button" class="notify-button" id="ring-chef">Ring Chef</button>
       <button type="submit">Place Order</button>
     </form>

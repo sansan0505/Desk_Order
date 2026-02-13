@@ -2,8 +2,10 @@ from datetime import datetime, timedelta, timezone
 import os
 
 import json
+from uuid import uuid4
 
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__, template_folder="views", static_folder="static")
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
@@ -11,6 +13,7 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MENU_ASSETS_DIR = os.path.join(BASE_DIR, "static", "menu")
 LEGACY_MENU_ASSETS_DIR = r"C:\Users\Admin\.cursor\projects\c-Users-Admin-OneDrive-Documents-Innov\assets"
+VOICE_UPLOAD_DIR = os.path.join(BASE_DIR, "static", "voice")
 MENU_ASSETS_DIR = os.getenv("MENU_ASSETS_DIR")
 if not MENU_ASSETS_DIR:
     MENU_ASSETS_DIR = (
@@ -18,6 +21,7 @@ if not MENU_ASSETS_DIR:
         if os.path.isdir(DEFAULT_MENU_ASSETS_DIR)
         else LEGACY_MENU_ASSETS_DIR
     )
+os.makedirs(VOICE_UPLOAD_DIR, exist_ok=True)
 
 # In-memory store for demo purposes. Replace with DB in production.
 ORDERS = []
@@ -285,6 +289,8 @@ def place_order(token: str):
     order_text = request.form.get("order_text", "").strip()
     requirements = request.form.get("requirements", "").strip()
     mate_name = request.form.get("mate_name", "").strip()
+    voice_file = request.files.get("voice_message")
+    voice_filename = ""
     order_items = []
 
     if order_items_json:
@@ -302,7 +308,14 @@ def place_order(token: str):
     if not employee_name:
         return redirect(url_for("employee_login", token=token))
 
-    if not order_items and not order_text:
+    if voice_file and voice_file.filename:
+        original = secure_filename(voice_file.filename)
+        ext = os.path.splitext(original)[1] or ".webm"
+        voice_filename = f"{uuid4().hex}{ext}"
+        voice_path = os.path.join(VOICE_UPLOAD_DIR, voice_filename)
+        voice_file.save(voice_path)
+
+    if not order_items and not order_text and not voice_filename:
         return render_template(
             "index.html",
             error="Please add at least one item.",
@@ -314,16 +327,19 @@ def place_order(token: str):
             menu=MENU,
         )
 
-    if not order_text:
+    if not order_text and order_items:
         order_text = ", ".join(
             f"{item['name']} x{item['qty']}" for item in order_items
         )
+    if not order_text and voice_filename:
+        order_text = "Voice order"
 
     order = {
         "id": NEXT_ORDER_ID,
         "employee_name": employee_name,
         "mate_name": mate_name,
         "order_text": order_text,
+        "voice_filename": voice_filename,
         "order_items": order_items,
         "requirements": requirements,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
