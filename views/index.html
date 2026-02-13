@@ -26,7 +26,7 @@
       <a href="{{ url_for('employee_logout', token=employee_token) }}">Change name</a>
     </p>
     <div id="preset-list" class="preset-list" data-api-base="/api/employee/{{ employee_token }}"></div>
-    <form class="order-form" method="post" action="{{ url_for('place_order', token=employee_token) }}">
+    <form class="order-form" method="post" enctype="multipart/form-data" action="{{ url_for('place_order', token=employee_token) }}">
       <label class="menu-title">Menu</label>
       <div class="menu-grid" data-api-base="/api/employee/{{ employee_token }}">
         <p class="muted">Loading menu...</p>
