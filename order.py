@@ -394,6 +394,9 @@ def employee_login(token: str):
 def employee_login_submit(token: str):
     if not is_employee_token(token):
         return "Not found", 404
+    role = request.form.get("role", "employee").strip().lower()
+    if role == "chef":
+        return redirect(url_for("chef_dashboard", token=CHEF_TOKEN))
     employee_name = request.form.get("employee_name", "").strip()
     if not employee_name:
         return render_template(

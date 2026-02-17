@@ -12,13 +12,22 @@
       <p class="error">{{ error }}</p>
     {% endif %}
     <form class="login-form" method="post" action="{{ url_for('employee_login_submit', token=employee_token) }}">
+      <label class="menu-title">I am a</label>
+      <label class="toggle-row">
+        <span>Employee</span>
+        <input type="radio" name="role" value="employee" checked />
+      </label>
+      <label class="toggle-row">
+        <span>Chef</span>
+        <input type="radio" name="role" value="chef" />
+      </label>
+
       <label for="employee_name">Your name</label>
       <input
         id="employee_name"
         name="employee_name"
         type="text"
         placeholder="Jane Doe"
-        required
         class="login-input"
       />
       <button type="submit">Continue</button>
