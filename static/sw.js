@@ -1,5 +1,6 @@
-const CACHE_NAME = "desk-order-v2";
+const CACHE_NAME = "desk-order-v3";
 const ASSETS = [
+  "/offline.html",
   "/static/manifest.json",
   "/static/food_hero.svg",
   "/static/welcome_hero.svg",
@@ -28,7 +29,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match("/offline.html"))
+    );
     return;
   }
   event.respondWith(
