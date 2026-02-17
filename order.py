@@ -550,6 +550,7 @@ def chef_dashboard(token: str):
         "chef.html",
         orders=orders_sorted,
         chef_token=token,
+        employee_token=EMPLOYEE_TOKEN,
         suggested_eta=suggested_eta,
     )
 
