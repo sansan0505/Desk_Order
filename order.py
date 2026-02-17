@@ -162,6 +162,11 @@ def now_ist():
     return datetime.now(IST_TZ)
 
 
+def is_sleeping_now():
+    now = now_ist().time()
+    return now >= datetime.strptime("19:30", "%H:%M").time()
+
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -374,6 +379,7 @@ def employee_order(token: str):
         employee_token=token,
         employee_name=employee_name,
         menu=MENU,
+        sleeping=is_sleeping_now(),
     )
 
 
@@ -413,6 +419,16 @@ def place_order(token: str):
     if not is_employee_token(token):
         return "Not found", 404
     prune_orders()
+    if is_sleeping_now():
+        employee_name = session.get("employee_name", "").strip()
+        return render_template(
+            "index.html",
+            error="Ordering is closed for today.",
+            employee_name=employee_name,
+            employee_token=token,
+            menu=MENU,
+            sleeping=True,
+        )
     employee_name = session.get("employee_name", "").strip()
     order_items_json = request.form.get("order_items_json", "").strip()
     order_text = request.form.get("order_text", "").strip()

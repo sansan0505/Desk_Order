@@ -22,6 +22,7 @@ const voiceWave = document.getElementById("voice-wave");
 const voicePreview = document.getElementById("voice-preview");
 const voiceInput = document.getElementById("voice_message");
 const orderForm = document.querySelector(".order-form");
+const isSleeping = orderForm?.dataset.sleeping === "true";
 let mediaRecorder;
 let recordedChunks = [];
 let recordedBlob = null;
@@ -489,6 +490,14 @@ const setupVoiceRecording = () => {
   if (!voiceStart || !voiceStop || !voiceInput) {
     return;
   }
+  if (isSleeping) {
+    voiceStart.disabled = true;
+    voiceStop.disabled = true;
+    if (voiceDiscard) {
+      voiceDiscard.disabled = true;
+    }
+    return;
+  }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     voiceStart.disabled = true;
     return;
@@ -575,6 +584,10 @@ setupVoiceRecording();
 
 if (orderForm) {
   orderForm.addEventListener("submit", async (event) => {
+    if (isSleeping) {
+      event.preventDefault();
+      return;
+    }
     if (!recordedBlob) {
       return;
     }
