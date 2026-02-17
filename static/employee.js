@@ -304,6 +304,16 @@ const refreshLunchReady = async () => {
       }
       return;
     }
+    if (updatedAt) {
+      const updatedMs = Date.parse(updatedAt);
+      if (Number.isFinite(updatedMs) && Date.now() - updatedMs > 45 * 60 * 1000) {
+        lunchBanner.classList.add("hidden");
+        if (lunchCheckinWrapper) {
+          lunchCheckinWrapper.classList.add("hidden");
+        }
+        return;
+      }
+    }
     if (lunchCheckinWrapper) {
       lunchCheckinWrapper.classList.remove("hidden");
     }

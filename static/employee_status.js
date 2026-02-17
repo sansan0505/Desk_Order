@@ -10,6 +10,8 @@ const lunchBanner = document.getElementById("lunch-ready-banner");
 const mateBanner = document.getElementById("mate-order-banner");
 const ringBanner = document.getElementById("ring-banner");
 const ringButton = document.getElementById("ring-chef");
+const cancelButton = document.getElementById("cancel-order");
+const mateOrdersList = document.getElementById("mate-orders-list");
 const LUNCH_SEEN_KEY = "lunchReadySeenAt";
 const MATE_SEEN_KEY = "mateOrderSeenIds";
 
@@ -18,6 +20,7 @@ const statusMessages = {
   Preparing: "Chef is preparing your order.",
   Ready: "Order is ready for pickup/delivery.",
   Delivered: "Order delivered. Enjoy your meal!",
+  Cancelled: "Order cancelled.",
 };
 
 const updateStatusUi = (order) => {
@@ -28,6 +31,11 @@ const updateStatusUi = (order) => {
   statusPill.textContent = status;
   statusPill.className = `status-pill status-${status.toLowerCase()}`;
   statusMessage.textContent = statusMessages[status] || "Status updated.";
+  if (cancelButton) {
+    const disabled = ["Ready", "Delivered", "Cancelled"].includes(status);
+    cancelButton.disabled = disabled;
+    cancelButton.classList.toggle("hidden", disabled);
+  }
   if (orderTime) {
     const iso = order.created_at_iso || orderTime.dataset.createdIso || order.created_at;
     const parsed = iso ? Date.parse(iso) : NaN;
@@ -58,6 +66,10 @@ const updateStatusUi = (order) => {
   } else if (status === "Ready" || status === "Delivered") {
     progressWrapper.classList.remove("hidden");
     progressBar.style.width = "100%";
+    progressText.textContent = "";
+  } else if (status === "Cancelled") {
+    progressWrapper.classList.add("hidden");
+    progressBar.style.width = "0%";
     progressText.textContent = "";
   } else {
     progressWrapper.classList.add("hidden");
@@ -132,6 +144,13 @@ const refreshLunchReady = async () => {
       lunchBanner.classList.add("hidden");
       return;
     }
+    if (updatedAt) {
+      const updatedMs = Date.parse(updatedAt);
+      if (Number.isFinite(updatedMs) && Date.now() - updatedMs > 45 * 60 * 1000) {
+        lunchBanner.classList.add("hidden");
+        return;
+      }
+    }
     const lastSeen = localStorage.getItem(LUNCH_SEEN_KEY) || "";
     if (updatedAt && updatedAt !== lastSeen) {
       localStorage.setItem(LUNCH_SEEN_KEY, updatedAt);
@@ -173,6 +192,10 @@ const refreshMateOrders = async () => {
     const data = await response.json();
     if (!Array.isArray(data) || data.length === 0) {
       mateBanner.classList.add("hidden");
+      if (mateOrdersList) {
+        mateOrdersList.classList.add("hidden");
+        mateOrdersList.replaceChildren();
+      }
       return;
     }
     const seenIds = new Set(getSeenMateIds());
@@ -187,6 +210,31 @@ const refreshMateOrders = async () => {
       const items = last.order_text || "an order";
       mateBanner.textContent = `${employee} has ordered ${items} for you.`;
       mateBanner.classList.remove("hidden");
+    }
+
+    if (mateOrdersList) {
+      mateOrdersList.replaceChildren();
+      mateOrdersList.classList.remove("hidden");
+      const title = document.createElement("h3");
+      title.textContent = "Orders for you";
+      mateOrdersList.appendChild(title);
+      data.forEach((order) => {
+        const row = document.createElement("div");
+        row.className = "card-header";
+        row.innerHTML = `<strong>${order.order_text || "Order"}</strong><span class="status-pill status-${(order.status || "").toLowerCase()}">${order.status || "Pending"}</span>`;
+        mateOrdersList.appendChild(row);
+        const actions = document.createElement("div");
+        actions.className = "status-actions";
+        if (!["Ready", "Delivered", "Cancelled"].includes(order.status)) {
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "notify-button cancel-order-btn";
+          cancel.dataset.orderId = order.id;
+          cancel.textContent = "Cancel order";
+          actions.appendChild(cancel);
+          mateOrdersList.appendChild(actions);
+        }
+      });
     }
   } catch (error) {
     // Ignore transient network errors.
@@ -246,3 +294,29 @@ if (ringButton) {
     }
   });
 }
+
+document.addEventListener("click", async (event) => {
+  const target = event.target;
+  const button = target.closest(".cancel-order-btn");
+  const single = target.closest("#cancel-order");
+  const cancelTarget = button || single;
+  if (!cancelTarget) {
+    return;
+  }
+  const orderId = cancelTarget.dataset.orderId;
+  if (!orderId) {
+    return;
+  }
+  try {
+    const response = await fetch(`${apiBase}/orders/${orderId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.ok) {
+      refreshStatus();
+      refreshMateOrders();
+    }
+  } catch (error) {
+    // Ignore transient network errors.
+  }
+});
