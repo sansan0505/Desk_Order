@@ -13,24 +13,49 @@
     {% endif %}
     <form class="login-form" method="post" action="{{ url_for('employee_login_submit', token=employee_token) }}">
       <label class="menu-title">I am a</label>
-      <label class="toggle-row">
-        <span>Employee</span>
-        <input type="radio" name="role" value="employee" checked />
-      </label>
-      <label class="toggle-row">
-        <span>Chef</span>
-        <input type="radio" name="role" value="chef" />
-      </label>
+      <div class="role-options">
+        <label class="role-option">
+          <input type="radio" name="role" value="employee" checked />
+          <span>Employee</span>
+        </label>
+        <label class="role-option">
+          <input type="radio" name="role" value="chef" />
+          <span>Chef</span>
+        </label>
+      </div>
 
-      <label for="employee_name">Your name</label>
-      <input
-        id="employee_name"
-        name="employee_name"
-        type="text"
-        placeholder="Jane Doe"
-        class="login-input"
-      />
+      <div id="name-field">
+        <label for="employee_name">Your name</label>
+        <input
+          id="employee_name"
+          name="employee_name"
+          type="text"
+          placeholder="Jane Doe"
+          class="login-input"
+        />
+      </div>
       <button type="submit">Continue</button>
     </form>
+    <script>
+      const roleInputs = document.querySelectorAll('input[name="role"]');
+      const nameInput = document.getElementById("employee_name");
+      const nameField = document.getElementById("name-field");
+      const updateNameRequired = () => {
+        const role = document.querySelector('input[name="role"]:checked')?.value;
+        if (!nameInput) return;
+        if (role === "chef") {
+          nameInput.required = false;
+          nameInput.disabled = true;
+          nameInput.value = "";
+          if (nameField) nameField.classList.add("hidden");
+        } else {
+          nameInput.disabled = false;
+          nameInput.required = true;
+          if (nameField) nameField.classList.remove("hidden");
+        }
+      };
+      roleInputs.forEach((input) => input.addEventListener("change", updateNameRequired));
+      updateNameRequired();
+    </script>
   </div>
 {% endblock %}
