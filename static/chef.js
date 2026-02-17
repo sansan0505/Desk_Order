@@ -9,6 +9,7 @@ const soundToggle = document.getElementById("sound-toggle");
 const lunchReadyToggle = document.getElementById("lunch-ready-toggle");
 const chefMenuGrid = document.getElementById("chef-menu-grid");
 const lunchCheckins = document.getElementById("lunch-checkins");
+const lunchCheckinsCard = document.getElementById("lunch-checkins-card");
 const SOUND_KEY = "chefSoundEnabled";
 const LUNCH_KEY = "lunchReadyState";
 const RING_SEEN_KEY = "chefRingSeenIds";
@@ -432,6 +433,7 @@ if (lunchReadyToggle) {
       });
       if (response.ok) {
         setLunchReadyState(ready);
+        refreshLunchCheckins();
       }
     } catch (error) {
       // Ignore transient network errors.
@@ -536,6 +538,15 @@ setInterval(refreshRings, 5000);
 const refreshLunchCheckins = async () => {
   if (!lunchCheckins) {
     return;
+  }
+  if (lunchReadyToggle && !lunchReadyToggle.checked) {
+    if (lunchCheckinsCard) {
+      lunchCheckinsCard.classList.add("hidden");
+    }
+    return;
+  }
+  if (lunchCheckinsCard) {
+    lunchCheckinsCard.classList.remove("hidden");
   }
   const apiBase = lunchCheckins.dataset.apiBase;
   if (!apiBase) {
