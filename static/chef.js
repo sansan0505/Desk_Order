@@ -345,6 +345,30 @@ const playChime = () => {
   }
 };
 
+const playRingTone = () => {
+  try {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 650;
+    gain.gain.value = 0.08;
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start();
+    const interval = setInterval(() => {
+      oscillator.frequency.value = oscillator.frequency.value === 650 ? 480 : 650;
+    }, 350);
+    setTimeout(() => {
+      clearInterval(interval);
+      oscillator.stop();
+      audio.close();
+    }, 4500);
+  } catch (error) {
+    // Ignore audio errors.
+  }
+};
+
 const getSoundEnabled = () => {
   const stored = localStorage.getItem(SOUND_KEY);
   if (stored === "true") {
@@ -524,7 +548,7 @@ const refreshRings = async () => {
       setSeenRingIds(Array.from(seenIds));
       showRingNotification(newest);
       if (getSoundEnabled()) {
-        playChime();
+        playRingTone();
       }
     }
   } catch (error) {
