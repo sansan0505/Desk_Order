@@ -6,6 +6,19 @@
     <title>{{ title or "Desk Order" }}</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
     <meta name="theme-color" content="#0f1224" />
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "373574b7-c19f-426a-b2d3-cebea971454b",
+          safari_web_id: "web.onesignal.auto.665a394a-cbcf-449b-8277-1a86a5e1eeb9",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
     <style>
       @font-face {
         font-family: "Thinoo";
